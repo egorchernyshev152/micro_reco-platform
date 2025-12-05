@@ -20,14 +20,20 @@ public class EventClient {
     @Value("${clients.event.base-url}")
     private String baseUrl;
 
+    private WebClient client() {
+        return webClientBuilder.baseUrl(baseUrl).build();
+    }
+
     public List<ItemStatDto> getStatsByItem(String period) {
-        String url = baseUrl + "/events/stats/by-item";
-        if (period != null && !period.isBlank()) {
-            url += "?period=" + period;
-        }
-        return webClientBuilder.build()
+        return client()
                 .get()
-                .uri(url)
+                .uri(builder -> {
+                    var uri = builder.path("/events/stats/by-item");
+                    if (period != null && !period.isBlank()) {
+                        uri.queryParam("period", period);
+                    }
+                    return uri.build();
+                })
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<ItemStatDto>>() {})
@@ -35,10 +41,9 @@ public class EventClient {
     }
 
     public List<EventDto> getEventsByUser(Long userId) {
-        String url = baseUrl + "/events?userId=" + userId;
-        return webClientBuilder.build()
+        return client()
                 .get()
-                .uri(url)
+                .uri(builder -> builder.path("/events").queryParam("userId", userId).build())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<EventDto>>() {})

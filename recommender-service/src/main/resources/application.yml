@@ -15,4 +15,12 @@ clients:
     base-url: http://localhost:8081
   event:
     base-url: http://localhost:8082
+  http:
+    connect-timeout: 2s
+    read-timeout: 5s
+    response-timeout: 5s
 
+security:
+  jwt:
+    # Shared secret for inter-service JWT (HS256); override via env in non-dev.
+    secret: change-me-please-32-characters-key

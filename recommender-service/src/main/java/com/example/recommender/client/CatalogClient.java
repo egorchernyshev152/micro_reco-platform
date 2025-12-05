@@ -21,12 +21,16 @@ public class CatalogClient {
     @Value("${clients.catalog.base-url}")
     private String baseUrl;
 
+    private WebClient client() {
+        return webClientBuilder.baseUrl(baseUrl).build();
+    }
+
     public List<ItemDto> getItemsByIds(Collection<Long> ids) {
         if (ids == null || ids.isEmpty()) return List.of();
         String idsParam = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
-        return webClientBuilder.build()
+        return client()
                 .get()
-                .uri(baseUrl + "/items/search?ids=" + idsParam)
+                .uri(builder -> builder.path("/items/search").queryParam("ids", idsParam).build())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<ItemDto>>() {})
@@ -34,9 +38,9 @@ public class CatalogClient {
     }
 
     public List<ItemDto> getAllItems() {
-        return webClientBuilder.build()
+        return client()
                 .get()
-                .uri(baseUrl + "/items")
+                .uri(builder -> builder.path("/items").build())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<ItemDto>>() {})
@@ -46,9 +50,9 @@ public class CatalogClient {
     public List<ItemDto> getItemsByCategories(Collection<String> categories) {
         if (categories == null || categories.isEmpty()) return List.of();
         String cats = categories.stream().map(s -> s.replace(",", " ")).collect(Collectors.joining(","));
-        return webClientBuilder.build()
+        return client()
                 .get()
-                .uri(baseUrl + "/items/by-categories?categories=" + cats)
+                .uri(builder -> builder.path("/items/by-categories").queryParam("categories", cats).build())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<ItemDto>>() {})
