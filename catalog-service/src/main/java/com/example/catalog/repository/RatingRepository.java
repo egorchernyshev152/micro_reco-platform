@@ -8,5 +8,6 @@ import java.util.List;
 public interface RatingRepository extends JpaRepository<Rating, Long> {
     List<Rating> findByUser_Id(Long userId);
     List<Rating> findByItem_Id(Long itemId);
+    boolean existsByUser_IdAndItem_Id(Long userId, Long itemId);
+    boolean existsByUser_IdAndItem_IdAndIdNot(Long userId, Long itemId, Long id);
 }
-

@@ -27,10 +27,22 @@ public class EventController {
         return eventService.createEvent(dto);
     }
 
+    @PutMapping("/events/{id}")
+    @Operation(summary = "Update event")
+    public EventDto update(@PathVariable Long id, @Valid @RequestBody EventDto dto) {
+        return eventService.updateEvent(id, dto);
+    }
+
     @GetMapping("/events")
-    @Operation(summary = "Get events by user")
-    public List<EventDto> byUser(@RequestParam("userId") Long userId) {
-        return eventService.getEventsByUser(userId);
+    @Operation(summary = "Get events (optionally filtered by user)")
+    public List<EventDto> byUser(@RequestParam(value = "userId", required = false) Long userId) {
+        return eventService.getEvents(userId);
+    }
+
+    @GetMapping("/events/{id}")
+    @Operation(summary = "Get event by id")
+    public EventDto getById(@PathVariable Long id) {
+        return eventService.getEvent(id);
     }
 
     @GetMapping("/events/stats/by-item")
@@ -44,5 +56,11 @@ public class EventController {
     public List<DayStatDto> statsByDay(@RequestParam(value = "period", required = false) String period) {
         return eventService.getStatsByDay(period);
     }
-}
 
+    @DeleteMapping("/events/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete event")
+    public void delete(@PathVariable Long id) {
+        eventService.deleteEvent(id);
+    }
+}

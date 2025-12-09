@@ -2,7 +2,10 @@ package com.example.catalog.service;
 
 import com.example.catalog.dto.UserDto;
 import com.example.catalog.entity.User;
+import com.example.catalog.exception.ConflictException;
 import com.example.catalog.exception.NotFoundException;
+import com.example.catalog.mapper.UserMapper;
+import com.example.catalog.model.UserModel;
 import com.example.catalog.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,25 +18,28 @@ public class UserService {
     private final UserRepository userRepository;
 
     public UserDto create(UserDto dto) {
-        User user = User.builder().name(dto.getName()).email(dto.getEmail()).build();
-        user = userRepository.save(user);
-        return toDto(user);
+        ensureEmailUnique(dto.getEmail(), null);
+        UserModel model = UserMapper.fromDto(dto);
+        User saved = userRepository.save(UserMapper.toEntity(model));
+        return UserMapper.toDto(UserMapper.toModel(saved));
     }
 
     public UserDto update(Long id, UserDto dto) {
-        User user = userRepository.findById(id).orElseThrow(() -> new NotFoundException("User not found: " + id));
+        ensureEmailUnique(dto.getEmail(), id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found: " + id));
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
-        return toDto(userRepository.save(user));
+        return UserMapper.toDto(UserMapper.toModel(userRepository.save(user)));
     }
 
     public UserDto get(Long id) {
-        return userRepository.findById(id).map(this::toDto)
+        return userRepository.findById(id).map(UserMapper::toModel).map(UserMapper::toDto)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
     }
 
     public List<UserDto> getAll() {
-        return userRepository.findAll().stream().map(this::toDto).toList();
+        return userRepository.findAll().stream().map(UserMapper::toModel).map(UserMapper::toDto).toList();
     }
 
     public void delete(Long id) {
@@ -43,12 +49,13 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    private UserDto toDto(User user) {
-        return UserDto.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .build();
+    private void ensureEmailUnique(String email, Long currentId) {
+        if (email == null) return;
+        boolean conflict = currentId == null
+                ? userRepository.existsByEmail(email)
+                : userRepository.existsByEmailAndIdNot(email, currentId);
+        if (conflict) {
+            throw new ConflictException("Email already used: " + email);
+        }
     }
 }
-

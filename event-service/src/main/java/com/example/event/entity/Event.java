@@ -1,5 +1,6 @@
 package com.example.event.entity;
 
+import com.example.event.model.EventType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,8 +24,9 @@ public class Event {
     @Column(name = "item_id", nullable = false)
     private Long itemId;
 
-    @Column(nullable = false)
-    private String type;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private EventType type;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -36,4 +38,3 @@ public class Event {
         }
     }
 }
-

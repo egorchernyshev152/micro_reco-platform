@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "ratings")
+@Table(name = "ratings", uniqueConstraints = @UniqueConstraint(name = "uq_rating_user_item", columnNames = {"user_id", "item_id"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -38,4 +38,3 @@ public class Rating {
         }
     }
 }
-

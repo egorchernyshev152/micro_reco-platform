@@ -7,8 +7,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -22,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 @EnableConfigurationProperties(WebClientConfig.WebClientProperties.class)
 public class WebClientConfig {
     @Bean
-    public WebClient.Builder webClientBuilder(WebClientProperties props, com.example.recommender.security.JwtService jwtService) {
+    public WebClient.Builder webClientBuilder(WebClientProperties props) {
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) props.connectTimeout().toMillis())
                 .responseTimeout(props.responseTimeout())
@@ -32,13 +30,6 @@ public class WebClientConfig {
 
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .filter((request, next) -> {
-                    String token = jwtService.createServiceToken("recommender-service");
-                    ClientRequest withAuth = ClientRequest.from(request)
-                            .headers(h -> h.set(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-                            .build();
-                    return next.exchange(withAuth);
-                })
                 .filter((request, next) -> next.exchange(request).flatMap(response -> {
                     if (response.statusCode().isError()) {
                         return response.bodyToMono(String.class)
@@ -94,4 +85,3 @@ public class WebClientConfig {
         }
     }
 }
-

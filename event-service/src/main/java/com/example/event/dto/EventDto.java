@@ -1,6 +1,6 @@
 package com.example.event.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import com.example.event.model.EventType;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -19,9 +19,8 @@ public class EventDto {
     @NotNull
     private Long itemId;
 
-    @NotBlank
-    private String type;
+    @NotNull
+    private EventType type;
 
     private Instant createdAt;
 }
-
