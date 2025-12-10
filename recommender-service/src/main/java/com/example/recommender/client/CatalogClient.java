@@ -22,12 +22,14 @@ public class CatalogClient {
     private String baseUrl;
 
     private WebClient client() {
+        // собираем WebClient с базовым url каталога, настроенным в application.yml
         return webClientBuilder.baseUrl(baseUrl).build();
     }
 
     public List<ItemDto> getItemsByIds(Collection<Long> ids) {
         if (ids == null || ids.isEmpty()) return List.of();
         String idsParam = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
+        // GET /items/search (catalog-service) — подтягиваем карточки товаров по id
         return client()
                 .get()
                 .uri(builder -> builder.path("/items/search").queryParam("ids", idsParam).build())
@@ -38,6 +40,7 @@ public class CatalogClient {
     }
 
     public List<ItemDto> getAllItems() {
+        // GET /items (catalog-service) — полный список товаров
         return client()
                 .get()
                 .uri(builder -> builder.path("/items").build())
@@ -50,6 +53,7 @@ public class CatalogClient {
     public List<ItemDto> getItemsByCategories(Collection<String> categories) {
         if (categories == null || categories.isEmpty()) return List.of();
         String cats = categories.stream().map(s -> s.replace(",", " ")).collect(Collectors.joining(","));
+        // GET /items/by-categories (catalog-service) — кандидаты по нужным категориям
         return client()
                 .get()
                 .uri(builder -> builder.path("/items/by-categories").queryParam("categories", cats).build())
@@ -59,4 +63,3 @@ public class CatalogClient {
                 .block();
     }
 }
-

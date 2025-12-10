@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class WebClientConfig {
     @Bean
     public WebClient.Builder webClientBuilder(WebClientProperties props) {
+        // настраиваем HTTP клиент для вызовов в другие сервисы (catalog/event) с таймаутами и защитой по ошибкам
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) props.connectTimeout().toMillis())
                 .responseTimeout(props.responseTimeout())
@@ -31,6 +32,7 @@ public class WebClientConfig {
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .filter((request, next) -> next.exchange(request).flatMap(response -> {
+                    // если downstream вернул 4xx/5xx — поднимаем исключение с телом для диагностики
                     if (response.statusCode().isError()) {
                         return response.bodyToMono(String.class)
                                 .defaultIfEmpty("")
@@ -46,7 +48,7 @@ public class WebClientConfig {
                     return Mono.just(response);
                 }))
                 .filter((request, next) -> next.exchange(request).doOnSubscribe(sub -> {
-                    // lightweight per-request log
+                    // легкий лог исходящих REST-запросов между микросервисами
                     System.out.printf("HTTP %s %s%n", request.method(), request.url());
                 }));
     }

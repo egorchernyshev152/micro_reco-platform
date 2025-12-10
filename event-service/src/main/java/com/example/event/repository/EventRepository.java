@@ -11,6 +11,10 @@ import java.util.List;
 public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByUserId(Long userId);
 
+    List<Event> findByCreatedAtAfter(Instant from);
+
+    List<Event> findByUserIdAndCreatedAtAfter(Long userId, Instant from);
+
     boolean existsByUserIdAndItemIdAndType(Long userId, Long itemId, EventType type);
 
     boolean existsByUserIdAndItemIdAndTypeAndIdNot(Long userId, Long itemId, EventType type, Long id);

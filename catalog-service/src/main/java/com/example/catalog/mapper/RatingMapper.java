@@ -11,6 +11,7 @@ public final class RatingMapper {
     }
 
     public static RatingModel toModel(Rating entity) {
+        // переводим entity рейтинга в внутреннюю модель
         if (entity == null) return null;
         return RatingModel.builder()
                 .id(entity.getId())
@@ -22,6 +23,7 @@ public final class RatingMapper {
     }
 
     public static Rating toEntity(RatingModel model, User user, Item item) {
+        // собираем entity рейтинга с уже загруженными связями
         if (model == null) return null;
         return Rating.builder()
                 .id(model.getId())
@@ -33,6 +35,7 @@ public final class RatingMapper {
     }
 
     public static RatingModel fromDto(RatingDto dto) {
+        // конвертируем входной DTO в модель
         if (dto == null) return null;
         return RatingModel.builder()
                 .id(dto.getId())
@@ -44,6 +47,7 @@ public final class RatingMapper {
     }
 
     public static RatingDto toDto(RatingModel model) {
+        // конвертируем модель в DTO для ответа
         if (model == null) return null;
         return RatingDto.builder()
                 .id(model.getId())

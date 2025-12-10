@@ -9,6 +9,7 @@ public final class UserMapper {
     }
 
     public static UserModel toModel(User entity) {
+        // переводим entity в внутреннюю модель
         if (entity == null) return null;
         return UserModel.builder()
                 .id(entity.getId())
@@ -18,6 +19,7 @@ public final class UserMapper {
     }
 
     public static User toEntity(UserModel model) {
+        // собираем entity для сохранения в БД
         if (model == null) return null;
         return User.builder()
                 .id(model.getId())
@@ -27,6 +29,7 @@ public final class UserMapper {
     }
 
     public static UserModel fromDto(UserDto dto) {
+        // конвертируем DTO во внутреннюю модель
         if (dto == null) return null;
         return UserModel.builder()
                 .id(dto.getId())
@@ -36,6 +39,7 @@ public final class UserMapper {
     }
 
     public static UserDto toDto(UserModel model) {
+        // конвертируем модель в DTO для ответа
         if (model == null) return null;
         return UserDto.builder()
                 .id(model.getId())

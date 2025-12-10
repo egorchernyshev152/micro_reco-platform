@@ -9,6 +9,7 @@ public final class EventMapper {
     }
 
     public static EventModel toModel(Event entity) {
+        // переводим entity события в внутреннюю модель
         if (entity == null) return null;
         return EventModel.builder()
                 .id(entity.getId())
@@ -20,6 +21,7 @@ public final class EventMapper {
     }
 
     public static Event toEntity(EventModel model) {
+        // собираем entity для сохранения в БД
         if (model == null) return null;
         return Event.builder()
                 .id(model.getId())
@@ -31,6 +33,7 @@ public final class EventMapper {
     }
 
     public static EventModel fromDto(EventDto dto) {
+        // конвертируем DTO в модель
         if (dto == null) return null;
         return EventModel.builder()
                 .id(dto.getId())
@@ -42,6 +45,7 @@ public final class EventMapper {
     }
 
     public static EventDto toDto(EventModel model) {
+        // конвертируем модель в DTO для ответа
         if (model == null) return null;
         return EventDto.builder()
                 .id(model.getId())

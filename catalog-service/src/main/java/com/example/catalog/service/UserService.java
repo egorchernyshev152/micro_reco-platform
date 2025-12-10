@@ -18,6 +18,7 @@ public class UserService {
     private final UserRepository userRepository;
 
     public UserDto create(UserDto dto) {
+        // создаем пользователя с проверкой уникальности email
         ensureEmailUnique(dto.getEmail(), null);
         UserModel model = UserMapper.fromDto(dto);
         User saved = userRepository.save(UserMapper.toEntity(model));
@@ -25,6 +26,7 @@ public class UserService {
     }
 
     public UserDto update(Long id, UserDto dto) {
+        // обновляем пользователя и проверяем уникальность email
         ensureEmailUnique(dto.getEmail(), id);
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
@@ -34,11 +36,13 @@ public class UserService {
     }
 
     public UserDto get(Long id) {
+        // получаем пользователя по id или 404
         return userRepository.findById(id).map(UserMapper::toModel).map(UserMapper::toDto)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
     }
 
     public List<UserDto> getAll() {
+        // возвращаем всех пользователей
         return userRepository.findAll().stream().map(UserMapper::toModel).map(UserMapper::toDto).toList();
     }
 
@@ -50,6 +54,7 @@ public class UserService {
     }
 
     private void ensureEmailUnique(String email, Long currentId) {
+        // проверяем уникальность email, учитывая текущего пользователя при апдейте
         if (email == null) return;
         boolean conflict = currentId == null
                 ? userRepository.existsByEmail(email)

@@ -21,6 +21,7 @@ public class ReportController {
     @GetMapping("/top-items")
     @Operation(summary = "Generate top items report (DOCX)")
     public ResponseEntity<byte[]> topItems(@RequestParam(value = "period", required = false) String period) {
+        // генерируем docx отчет с популярными товарами за период
         byte[] data = reportService.generateTopItemsDocx(period);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
@@ -28,4 +29,3 @@ public class ReportController {
         return ResponseEntity.ok().headers(headers).body(data);
     }
 }
-

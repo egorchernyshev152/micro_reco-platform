@@ -22,24 +22,28 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create user")
     public UserDto create(@Valid @RequestBody UserDto dto) {
+        // создаем пользователя
         return userService.create(dto);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update user")
     public UserDto update(@PathVariable("id") Long id, @Valid @RequestBody UserDto dto) {
+        // обновляем данные пользователя
         return userService.update(id, dto);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get user by id")
     public UserDto get(@PathVariable("id") Long id) {
+        // получаем пользователя по идентификатору
         return userService.get(id);
     }
 
     @GetMapping
     @Operation(summary = "Get all users")
     public List<UserDto> getAll() {
+        // возвращаем всех пользователей
         return userService.getAll();
     }
 
@@ -47,6 +51,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete user")
     public void delete(@PathVariable("id") Long id) {
+        // удаляем пользователя
         userService.delete(id);
     }
 }

@@ -22,6 +22,7 @@ public class EventService {
     private final EventRepository eventRepository;
 
     public EventDto createEvent(EventDto dto) {
+        // создаем событие и проверяем, что дубликата нет
         EventModel model = EventMapper.fromDto(dto);
         ensureUnique(model);
         Event saved = eventRepository.save(EventMapper.toEntity(model));
@@ -29,6 +30,7 @@ public class EventService {
     }
 
     public EventDto updateEvent(Long id, EventDto dto) {
+        // обновляем событие, сохраняя уникальность по user-item-type
         Event existing = eventRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Event not found: " + id));
         EventModel model = EventMapper.fromDto(dto);
@@ -44,12 +46,23 @@ public class EventService {
         return EventMapper.toDto(EventMapper.toModel(saved));
     }
 
-    public List<EventDto> getEvents(Long userId) {
-        List<Event> events = userId == null ? eventRepository.findAll() : eventRepository.findByUserId(userId);
+    public List<EventDto> getEvents(Long userId, String period) {
+        Instant from = resolveFrom(period);
+        List<Event> events;
+        if (userId == null && from == null) {
+            events = eventRepository.findAll();
+        } else if (userId == null) {
+            events = eventRepository.findByCreatedAtAfter(from);
+        } else if (from == null) {
+            events = eventRepository.findByUserId(userId);
+        } else {
+            events = eventRepository.findByUserIdAndCreatedAtAfter(userId, from);
+        }
         return events.stream().map(EventMapper::toModel).map(EventMapper::toDto).toList();
     }
 
     public EventDto getEvent(Long id) {
+        // получаем событие по id или 404
         return eventRepository.findById(id)
                 .map(EventMapper::toModel)
                 .map(EventMapper::toDto)

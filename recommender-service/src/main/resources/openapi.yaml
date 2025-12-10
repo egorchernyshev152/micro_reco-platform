@@ -1,0 +1,270 @@
+openapi: 3.0.3
+info:
+  title: Рекомендательный сервис
+  description: |
+    Popularity (baseline) и Co-occurrence рекомендации с заделом под ML-сервис.
+    Есть CRUD стратегий, триггер пересчета матрицы и получение рекомендаций.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Локальный стенд
+tags:
+  - name: Recommendations
+    description: Получение рекомендаций
+  - name: Strategies
+    description: Управление стратегиями и их параметрами
+  - name: Maintenance
+    description: Пересчет и служебные операции
+paths:
+  /recommendations/popular:
+    get:
+      tags: [Recommendations]
+      summary: Популярные элементы
+      description: Возвращает топ по популярности с учетом периода и весов событий.
+      parameters:
+        - $ref: '#/components/parameters/Period'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Топ популярных элементов
+          content:
+            application/json:
+              schema: $ref: '#/components/schemas/RecommendationList'
+        '400': { $ref: '#/components/responses/Error400' }
+  /recommendations/user/{userId}:
+    get:
+      tags: [Recommendations]
+      summary: Персональные рекомендации
+      description: |
+        Возвращает рекомендации для пользователя. Алгоритм выбирается параметром `algo`
+        или активной стратегией по умолчанию.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer, format: int64, minimum: 1 }
+          description: Идентификатор пользователя
+        - $ref: '#/components/parameters/Limit'
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [DAY, WEEK, MONTH]
+          description: Окно данных для расчета
+        - name: algo
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AlgorithmType'
+          description: Алгоритм: POPULARITY, CO_OCCURRENCE или ML_EMBEDDING
+        - name: strategyId
+          in: query
+          required: false
+          schema: { type: integer, format: int64, minimum: 1 }
+          description: Явно выбрать сохраненную стратегию
+      responses:
+        '200':
+          description: Список рекомендаций
+          content:
+            application/json:
+              schema: $ref: '#/components/schemas/RecommendationList'
+        '404': { $ref: '#/components/responses/Error404' }
+        '400': { $ref: '#/components/responses/Error400' }
+  /recommendations/rebuild:
+    post:
+      tags: [Maintenance]
+      summary: Пересчет матрицы co-occurrence/кэша
+      description: Стартует фоновой пересчет item-item матрицы или очистку кэша рекомендаций.
+      responses:
+        '202':
+          description: Пересчет запущен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string }
+                  status: { type: string, example: "STARTED" }
+        '400': { $ref: '#/components/responses/Error400' }
+  /strategies:
+    post:
+      tags: [Strategies]
+      summary: Создать стратегию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: $ref: '#/components/schemas/StrategyCreate'
+      responses:
+        '201':
+          description: Стратегия создана
+          content:
+            application/json:
+              schema: $ref: '#/components/schemas/Strategy'
+        '400': { $ref: '#/components/responses/Error400' }
+    get:
+      tags: [Strategies]
+      summary: Получить все стратегии
+      responses:
+        '200':
+          description: Список стратегий
+          content:
+            application/json:
+              schema:
+                type: array
+                items: $ref: '#/components/schemas/Strategy'
+  /strategies/{id}:
+    get:
+      tags: [Strategies]
+      summary: Получить стратегию по id
+      parameters:
+        - $ref: '#/components/parameters/StrategyId'
+      responses:
+        '200':
+          description: Найденная стратегия
+          content:
+            application/json:
+              schema: $ref: '#/components/schemas/Strategy'
+        '404': { $ref: '#/components/responses/Error404' }
+    put:
+      tags: [Strategies]
+      summary: Обновить стратегию по id
+      parameters:
+        - $ref: '#/components/parameters/StrategyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: $ref: '#/components/schemas/StrategyUpdate'
+      responses:
+        '200':
+          description: Обновленная стратегия
+          content:
+            application/json:
+              schema: $ref: '#/components/schemas/Strategy'
+        '404': { $ref: '#/components/responses/Error404' }
+        '400': { $ref: '#/components/responses/Error400' }
+    delete:
+      tags: [Strategies]
+      summary: Удалить стратегию по id
+      parameters:
+        - $ref: '#/components/parameters/StrategyId'
+      responses:
+        '204':
+          description: Удалено
+        '404': { $ref: '#/components/responses/Error404' }
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  parameters:
+    Period:
+      name: period
+      in: query
+      required: false
+      description: Окно расчета популярности
+      schema:
+        type: string
+        enum: [DAY, WEEK, MONTH]
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100 }
+      description: Максимум результатов, по умолчанию 10
+    StrategyId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+  responses:
+    Error400:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema: $ref: '#/components/schemas/Error'
+    Error404:
+      description: Не найдено
+      content:
+        application/json:
+          schema: $ref: '#/components/schemas/Error'
+  schemas:
+    AlgorithmType:
+      type: string
+      enum: [POPULARITY, CO_OCCURRENCE, ML_EMBEDDING]
+    Strategy:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        algorithm: { $ref: '#/components/schemas/AlgorithmType' }
+        eventWeights:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          example: { VIEW: 1.0, LIKE: 3.0, SAVE: 4.0 }
+        timeDecayHalfLifeDays:
+          type: integer
+          minimum: 1
+        minEventsPerUser:
+          type: integer
+          minimum: 1
+        candidateLimit:
+          type: integer
+          minimum: 1
+        fallbackAlgorithm:
+          $ref: '#/components/schemas/AlgorithmType'
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    StrategyCreate:
+      type: object
+      required: [name, algorithm]
+      properties:
+        name: { type: string }
+        algorithm: { $ref: '#/components/schemas/AlgorithmType' }
+        eventWeights:
+          type: object
+          additionalProperties: { type: number, format: float }
+        timeDecayHalfLifeDays: { type: integer, minimum: 1 }
+        minEventsPerUser: { type: integer, minimum: 1 }
+        candidateLimit: { type: integer, minimum: 1 }
+        fallbackAlgorithm: { $ref: '#/components/schemas/AlgorithmType' }
+        isActive: { type: boolean }
+    StrategyUpdate:
+      allOf:
+        - $ref: '#/components/schemas/StrategyCreate'
+    Item:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        description: { type: string }
+        category: { type: string }
+    Recommendation:
+      type: object
+      properties:
+        item: { $ref: '#/components/schemas/Item' }
+        score:
+          type: number
+          format: float
+          description: Ранжирующая метрика
+    RecommendationList:
+      type: object
+      properties:
+        algorithm: { $ref: '#/components/schemas/AlgorithmType' }
+        strategyId: { type: integer, format: int64, nullable: true }
+        generatedAt: { type: string, format: date-time }
+        items:
+          type: array
+          items: $ref: '#/components/schemas/Recommendation'
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+        traceId: { type: string }
+security:
+  - basicAuth: []

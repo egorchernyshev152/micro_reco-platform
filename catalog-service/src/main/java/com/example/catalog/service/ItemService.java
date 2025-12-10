@@ -18,12 +18,14 @@ public class ItemService {
     private final ItemRepository itemRepository;
 
     public ItemDto create(ItemDto dto) {
+        // сохраняем новую карточку товара
         ItemModel model = ItemMapper.fromDto(dto);
         Item saved = itemRepository.save(ItemMapper.toEntity(model));
         return ItemMapper.toDto(ItemMapper.toModel(saved));
     }
 
     public ItemDto update(Long id, ItemDto dto) {
+        // обновляем карточку товара по идентификатору
         Item item = itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Item not found: " + id));
         item.setTitle(dto.getTitle());
         item.setDescription(dto.getDescription());
@@ -32,11 +34,13 @@ public class ItemService {
     }
 
     public ItemDto get(Long id) {
+        // возвращаем товар по id или 404
         return itemRepository.findById(id).map(ItemMapper::toModel).map(ItemMapper::toDto)
                 .orElseThrow(() -> new NotFoundException("Item not found: " + id));
     }
 
     public List<ItemDto> getAll() {
+        // список всех товаров
         return itemRepository.findAll().stream().map(ItemMapper::toModel).map(ItemMapper::toDto).toList();
     }
 
@@ -48,10 +52,12 @@ public class ItemService {
     }
 
     public List<ItemDto> findByIds(Collection<Long> ids) {
+        // выборка товаров по набору идентификаторов
         return itemRepository.findByIdIn(ids).stream().map(ItemMapper::toModel).map(ItemMapper::toDto).toList();
     }
 
     public List<ItemDto> findByCategories(Collection<String> categories) {
+        // выборка товаров по категориям
         return itemRepository.findByCategoryIn(categories).stream().map(ItemMapper::toModel).map(ItemMapper::toDto).toList();
     }
 }

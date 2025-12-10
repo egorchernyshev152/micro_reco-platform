@@ -24,6 +24,7 @@ public class RatingService {
     private final ItemRepository itemRepository;
 
     public RatingDto add(RatingDto dto) {
+        // добавляем оценку, проверяем что такой пары user-item еще нет
         ensureUnique(dto.getUserId(), dto.getItemId(), null);
         RatingModel model = RatingMapper.fromDto(dto);
         Rating saved = ratingRepository.save(toEntityWithRelations(model));
@@ -31,6 +32,7 @@ public class RatingService {
     }
 
     public RatingDto update(Long id, RatingDto dto) {
+        // обновляем оценку и сохраняем оригинальную дату создания
         Rating existing = ratingRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Rating not found: " + id));
         ensureUnique(dto.getUserId(), dto.getItemId(), id);
@@ -47,10 +49,12 @@ public class RatingService {
     }
 
     public List<RatingDto> byUser(Long userId) {
+        // все оценки выбранного пользователя
         return ratingRepository.findByUser_Id(userId).stream().map(RatingMapper::toModel).map(RatingMapper::toDto).toList();
     }
 
     public List<RatingDto> byItem(Long itemId) {
+        // все оценки выбранного товара
         return ratingRepository.findByItem_Id(itemId).stream().map(RatingMapper::toModel).map(RatingMapper::toDto).toList();
     }
 
@@ -62,6 +66,7 @@ public class RatingService {
     }
 
     public List<RatingDto> getAll() {
+        // все оценки
         return ratingRepository.findAll().stream().map(RatingMapper::toModel).map(RatingMapper::toDto).toList();
     }
 
@@ -73,6 +78,7 @@ public class RatingService {
     }
 
     private Rating toEntityWithRelations(RatingModel model) {
+        // подтягиваем связи user/item чтобы собрать entity
         User user = userRepository.findById(model.getUserId())
                 .orElseThrow(() -> new NotFoundException("User not found: " + model.getUserId()));
         Item item = itemRepository.findById(model.getItemId())
@@ -81,6 +87,7 @@ public class RatingService {
     }
 
     private void ensureUnique(Long userId, Long itemId, Long currentId) {
+        // не допускаем дубликатов оценок для одной пары user-item
         if (userId == null || itemId == null) return;
         boolean conflict = currentId == null
                 ? ratingRepository.existsByUser_IdAndItem_Id(userId, itemId)

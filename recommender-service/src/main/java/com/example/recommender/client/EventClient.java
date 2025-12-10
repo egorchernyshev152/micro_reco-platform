@@ -21,10 +21,12 @@ public class EventClient {
     private String baseUrl;
 
     private WebClient client() {
+        // собираем WebClient с базовым url сервиса событий из application.yml
         return webClientBuilder.baseUrl(baseUrl).build();
     }
 
     public List<ItemStatDto> getStatsByItem(String period) {
+        // GET /events/stats/by-item (event-service) — агрегированная популярность по товарам
         return client()
                 .get()
                 .uri(builder -> {
@@ -40,14 +42,23 @@ public class EventClient {
                 .block();
     }
 
-    public List<EventDto> getEventsByUser(Long userId) {
+    public List<EventDto> getEvents(Long userId, String period) {
+        // GET /events (event-service) — отдаем историю событий, можно фильтровать по пользователю и окну
         return client()
                 .get()
-                .uri(builder -> builder.path("/events").queryParam("userId", userId).build())
+                .uri(builder -> {
+                    var uri = builder.path("/events");
+                    if (userId != null) {
+                        uri.queryParam("userId", userId);
+                    }
+                    if (period != null && !period.isBlank()) {
+                        uri.queryParam("period", period);
+                    }
+                    return uri.build();
+                })
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<EventDto>>() {})
                 .block();
     }
 }
-
