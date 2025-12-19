@@ -1,0 +1,87 @@
+@startuml
+title Диаграмма классов объектно-ориентированной модели ресурсов
+
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor<<external>> #fff4d6
+  BorderColor<<external>> #d48d00
+}
+
+class User <<external>> {
+  +id: Long
+  +name: String
+  +email: String
+}
+
+class Item <<external>> {
+  +id: Long
+  +title: String
+  +description: String
+  +category: String
+}
+
+class Rating <<external>> {
+  +id: Long
+  +userId: Long
+  +itemId: Long
+  +score: Integer
+  +createdAt: Instant
+}
+
+class Event <<external>> {
+  +id: Long
+  +userId: Long
+  +itemId: Long
+  +type: EventType
+  +createdAt: Instant
+}
+
+enum EventType {
+  VIEW
+  LIKE
+  SAVE
+}
+
+enum AlgorithmType {
+  POPULARITY
+  CO_OCCURRENCE
+  ML_EMBEDDING
+}
+
+class RecommendationResponse <<external>> {
+  +algorithm: AlgorithmType
+  +strategyId: Long
+  +generatedAt: Instant
+  +items: List<Item>
+}
+
+class RecommendationStrategy <<external>> {
+  +id: Long
+  +name: String
+  +algorithm: AlgorithmType
+  +eventWeights: Map<String,Double>
+  +timeDecayHalfLifeDays: Integer
+  +minEventsPerUser: Integer
+  +candidateLimit: Integer
+  +fallbackAlgorithm: AlgorithmType
+  +isActive: Boolean
+  +createdAt: Instant
+  +updatedAt: Instant
+}
+
+Event --> EventType
+RecommendationStrategy --> AlgorithmType
+RecommendationResponse --> AlgorithmType
+
+User "1" --> "*" Event : produces
+Item "1" -->"*" Event : acts_on
+User "1" --> "*" Rating : rates
+Item "1" --> "*" Rating : receives
+RecommendationResponse "1" o-- "*" Item : contains
+
+note right of RecommendationResponse
+  <<external>> — ресурсные классы,
+  доступные внешним системам
+end note
+
+@enduml

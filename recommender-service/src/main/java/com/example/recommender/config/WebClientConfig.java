@@ -53,9 +53,7 @@ public class WebClientConfig {
                 }));
     }
 
-    /**
-     * Lightweight properties holder for WebClient timeouts.
-     */
+
     @ConfigurationProperties(prefix = "clients.http")
     public static class WebClientProperties {
         private Duration connectTimeout = Duration.ofSeconds(2);

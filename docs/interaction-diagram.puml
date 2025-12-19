@@ -1,0 +1,28 @@
+@startuml
+title Диаграмма взаимодействия компонентов системы\n(сценарий персональных рекомендаций)
+
+autonumber
+
+actor "External system" as External
+participant "Recommender API\n(RecommendationController)" as RecAPI
+participant "RecommendationService\n(recommender-service)" as RecSvc
+participant "event-service\n(EventController)" as EventSvc
+participant "catalog-service\n(ItemController)" as CatalogSvc
+
+External -> RecAPI : GET /api/v1/recommendations/user/{userId}
+RecAPI -> RecSvc : build context
+RecSvc -> EventSvc : GET /events?userId=... (история)
+EventSvc --> RecSvc : List<EventDto>
+RecSvc -> EventSvc : GET /events?period=... (общий поток)
+EventSvc --> RecSvc : List<EventDto>
+RecSvc -> RecSvc : RecommendationAlgorithm.recommend(ctx)
+RecSvc -> CatalogSvc : GET /items/search?ids=...
+CatalogSvc --> RecSvc : List<ItemDto>
+RecSvc --> External : RecommendationResponse
+
+note over External, CatalogSvc
+  Поток демонстрирует взаимодействие компонентов микросервисов.
+  DTO/ответы — ресурсы, доступные внешним системам.
+end note
+
+@enduml

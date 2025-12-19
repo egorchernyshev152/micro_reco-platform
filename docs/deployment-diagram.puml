@@ -1,0 +1,26 @@
+@startuml
+title Deployment Diagram – micro_reco platform
+
+node "Host/VM\n(local dev)" {
+  node "recommender-service\nJava 17 / Spring Boot\nport 8083" as Recommender {
+  }
+  node "catalog-service\nJava 17 / Spring Boot\nport 8081" as Catalog {
+  }
+  node "event-service\nJava 17 / Spring Boot\nport 8082" as Event {
+  }
+}
+
+node "Docker container\npostgres:16\nport 5433->5432" as Pg {
+  database "PostgreSQL\nschemas: catalog-db,\nevent-db, recommender-db" as Postgres
+}
+
+actor "External Client" as Client
+
+Client -> Recommender : HTTP/1.1 JSON
+Recommender -> Catalog : HTTP/1.1 JSON
+Recommender -> Event : HTTP/1.1 JSON
+Catalog --> Postgres : JDBC
+Event --> Postgres : JDBC
+Recommender --> Postgres : JDBC
+
+@enduml

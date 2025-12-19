@@ -1,0 +1,31 @@
+@startuml
+title Component Diagram
+
+skinparam componentStyle rectangle
+skinparam rectangle {
+  BackgroundColor #f4f8ff
+  BorderColor #1d70b8
+}
+skinparam database {
+  BackgroundColor #fff4d6
+  BorderColor #d48d00
+}
+
+actor "External Client" as Client
+
+component "recommender-service\n(port 8083)" as Recommender
+component "catalog-service\n(port 8081)" as Catalog
+component "event-service\n(port 8082)" as Event
+database "PostgreSQL\n(reco-db)" as Postgres
+
+Client --> Recommender : REST (GET /recommendations,\nGET /reports,\nCRUD /strategies)
+Client --> Catalog : REST (CRUD /items,\n/users,\n/ratings)
+Client --> Event : REST (POST/GET /events,\nGET /events/stats/*)
+Recommender --> Catalog : REST (GET /items,\nGET /items/search,\nGET /ratings,\n... )
+Recommender --> Event : REST (GET /events,\nGET /events/stats,\n... )
+
+Catalog --> Postgres : JDBC (catalog-db schema)
+Event --> Postgres : JDBC (event-db schema)
+Recommender --> Postgres : JDBC (recommender-db schema)
+
+@enduml
