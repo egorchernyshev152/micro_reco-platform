@@ -18,14 +18,13 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    @GetMapping("/top-items")
-    @Operation(summary = "Generate top items report (DOCX)")
-    public ResponseEntity<byte[]> topItems(@RequestParam(value = "period", required = false) String period) {
-        // генерируем docx отчет с популярными товарами за период
-        byte[] data = reportService.generateTopItemsDocx(period);
+    @GetMapping("/top-movies")
+    @Operation(summary = "Generate top movies report (DOCX)")
+    public ResponseEntity<byte[]> topMovies(@RequestParam(value = "period", required = false) String period) {
+        byte[] data = reportService.generateTopMoviesDocx(period);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
-        headers.setContentDisposition(ContentDisposition.attachment().filename("top-items-report.docx").build());
+        headers.setContentDisposition(ContentDisposition.attachment().filename("top-movies-report.docx").build());
         return ResponseEntity.ok().headers(headers).body(data);
     }
 }

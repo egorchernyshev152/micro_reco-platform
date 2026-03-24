@@ -1,17 +1,21 @@
 package com.example.event.model;
 
-import com.example.event.model.EventType;
 import lombok.Builder;
 import lombok.Value;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Value
 @Builder
 public class EventModel {
     Long id;
     Long userId;
-    Long itemId;
+    Long movieId;
     EventType type;
     Instant createdAt;
+    String sessionId;
+    String source;
+    String device;
+    Map<String, Object> payload;
 }

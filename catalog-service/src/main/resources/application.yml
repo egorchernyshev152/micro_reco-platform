@@ -18,11 +18,23 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
 
 logging:
   level:
     root: INFO
     com.example.catalog: DEBUG
+    org.springframework.web.reactive.function.client: TRACE
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:super-secret-demo-key-change-me-please-123456}
+    issuer: reco-platform
+    expiration-seconds: 43200
 
 springdoc:
   api-docs:
@@ -30,3 +42,16 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
+
+tmdb:
+  api-key: ${TMDB_API_KEY:1b48504b5de8a39ab0d622f9d1b4da73}
+  base-url: https://api.themoviedb.org/3
+  image-base-url: https://image.tmdb.org/t/p
+  poster-size: w500
+  backdrop-size: w780
+  profile-size: w185
+  proxy:
+    host: ${TMDB_PROXY_HOST:127.0.0.1}
+    port: ${TMDB_PROXY_PORT:10809}
+    username: ${TMDB_PROXY_USERNAME:}
+    password: ${TMDB_PROXY_PASSWORD:}

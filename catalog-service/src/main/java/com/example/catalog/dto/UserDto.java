@@ -1,8 +1,12 @@
 package com.example.catalog.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import lombok.*;
+import com.example.catalog.entity.UserRole;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
 
 @Data
 @NoArgsConstructor
@@ -10,12 +14,10 @@ import lombok.*;
 @Builder
 public class UserDto {
     private Long id;
-
-    @NotBlank
     private String name;
-
-    @NotBlank
-    @Email
     private String email;
+    private UserRole role;
+    private Instant createdAt;
+    private Instant updatedAt;
 }
 

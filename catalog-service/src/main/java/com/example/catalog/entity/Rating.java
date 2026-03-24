@@ -1,12 +1,16 @@
 package com.example.catalog.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 
 @Entity
-@Table(name = "ratings", uniqueConstraints = @UniqueConstraint(name = "uq_rating_user_item", columnNames = {"user_id", "item_id"}))
+@Table(name = "movie_ratings", uniqueConstraints = @UniqueConstraint(name = "uq_rating_user_movie", columnNames = {"user_id", "movie_id"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,8 +26,8 @@ public class Rating {
     private User user;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "item_id", nullable = false, foreignKey = @ForeignKey(name = "fk_rating_item"))
-    private Item item;
+    @JoinColumn(name = "movie_id", nullable = false, foreignKey = @ForeignKey(name = "fk_rating_movie"))
+    private Movie movie;
 
     @Column(nullable = false)
     private Integer score;

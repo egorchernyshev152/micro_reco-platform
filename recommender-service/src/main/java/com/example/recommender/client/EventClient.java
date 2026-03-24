@@ -1,7 +1,7 @@
 package com.example.recommender.client;
 
 import com.example.recommender.dto.EventDto;
-import com.example.recommender.dto.ItemStatDto;
+import com.example.recommender.dto.MovieStatDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -21,40 +21,46 @@ public class EventClient {
     private String baseUrl;
 
     private WebClient client() {
-        // собираем WebClient с базовым url сервиса событий из application.yml
         return webClientBuilder.baseUrl(baseUrl).build();
     }
 
-    public List<ItemStatDto> getStatsByItem(String period) {
-        // GET /events/stats/by-item (event-service) — агрегированная популярность по товарам
+    public List<MovieStatDto> getStatsByMovie(String period) {
         return client()
                 .get()
                 .uri(builder -> {
-                    var uri = builder.path("/events/stats/by-item");
+                    builder.path("/events/stats/by-movie");
                     if (period != null && !period.isBlank()) {
-                        uri.queryParam("period", period);
+                        builder.queryParam("period", period);
                     }
-                    return uri.build();
+                    return builder.build();
                 })
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<ItemStatDto>>() {})
+                .bodyToMono(new ParameterizedTypeReference<List<MovieStatDto>>() {})
                 .block();
     }
 
-    public List<EventDto> getEvents(Long userId, String period) {
-        // GET /events (event-service) — отдаем историю событий, можно фильтровать по пользователю и окну
+    public List<EventDto> getEvents(Long userId, Long movieId, String type, String period, Integer limit) {
         return client()
                 .get()
                 .uri(builder -> {
-                    var uri = builder.path("/events");
+                    builder.path("/events");
                     if (userId != null) {
-                        uri.queryParam("userId", userId);
+                        builder.queryParam("userId", userId);
+                    }
+                    if (movieId != null) {
+                        builder.queryParam("movieId", movieId);
+                    }
+                    if (type != null && !type.isBlank()) {
+                        builder.queryParam("type", type);
                     }
                     if (period != null && !period.isBlank()) {
-                        uri.queryParam("period", period);
+                        builder.queryParam("period", period);
                     }
-                    return uri.build();
+                    if (limit != null && limit > 0) {
+                        builder.queryParam("limit", limit);
+                    }
+                    return builder.build();
                 })
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()

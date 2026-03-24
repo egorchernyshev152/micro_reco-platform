@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class RecommendationItemDto {
-    private ItemDto item;
+    private MovieDto movie;
     private double score;
+    private Double popularityScore;
+    private Double contentScore;
 }

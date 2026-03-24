@@ -18,10 +18,10 @@ public class RatingDto {
     private Long userId;
 
     @NotNull
-    private Long itemId;
+    private Long movieId;
 
     @Min(1)
-    @Max(5)
+    @Max(10)
     private Integer score;
 
     private Instant createdAt;

@@ -9,42 +9,46 @@ public final class UserMapper {
     }
 
     public static UserModel toModel(User entity) {
-        // переводим entity в внутреннюю модель
-        if (entity == null) return null;
+        if (entity == null) {
+            return null;
+        }
         return UserModel.builder()
                 .id(entity.getId())
                 .name(entity.getName())
                 .email(entity.getEmail())
+                .passwordHash(entity.getPasswordHash())
+                .role(entity.getRole())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
                 .build();
     }
 
     public static User toEntity(UserModel model) {
-        // собираем entity для сохранения в БД
-        if (model == null) return null;
+        if (model == null) {
+            return null;
+        }
         return User.builder()
                 .id(model.getId())
                 .name(model.getName())
                 .email(model.getEmail())
-                .build();
-    }
-
-    public static UserModel fromDto(UserDto dto) {
-        // конвертируем DTO во внутреннюю модель
-        if (dto == null) return null;
-        return UserModel.builder()
-                .id(dto.getId())
-                .name(dto.getName())
-                .email(dto.getEmail())
+                .passwordHash(model.getPasswordHash())
+                .role(model.getRole())
+                .createdAt(model.getCreatedAt())
+                .updatedAt(model.getUpdatedAt())
                 .build();
     }
 
     public static UserDto toDto(UserModel model) {
-        // конвертируем модель в DTO для ответа
-        if (model == null) return null;
+        if (model == null) {
+            return null;
+        }
         return UserDto.builder()
                 .id(model.getId())
                 .name(model.getName())
                 .email(model.getEmail())
+                .role(model.getRole())
+                .createdAt(model.getCreatedAt())
+                .updatedAt(model.getUpdatedAt())
                 .build();
     }
 }

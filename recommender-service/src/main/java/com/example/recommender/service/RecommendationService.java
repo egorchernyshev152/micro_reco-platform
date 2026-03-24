@@ -2,6 +2,7 @@ package com.example.recommender.service;
 
 import com.example.recommender.client.EventClient;
 import com.example.recommender.dto.EventDto;
+import com.example.recommender.dto.MovieStatDto;
 import com.example.recommender.dto.RecommendationResponse;
 import com.example.recommender.model.AlgorithmType;
 import com.example.recommender.model.RecommendationContext;
@@ -18,77 +19,147 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RecommendationService {
 
+    private static final int GLOBAL_EVENT_LIMIT = 5000;
+    private static final Map<String, Double> DEFAULT_EVENT_WEIGHTS = Map.of(
+            "VIEW_CARD", 1.0,
+            "WATCH_TRAILER", 1.5,
+            "FAVORITE", 4.0,
+            "BOOKMARK", 2.5,
+            "SHARE", 2.0,
+            "START_WATCHING", 3.0,
+            "FINISH_WATCHING", 5.0,
+            "RATE", 4.5
+    );
+
     private final EventClient eventClient;
     private final RecommendationStrategyRepository strategyRepository;
     private final List<RecommendationAlgorithm> algorithms;
 
-    private static final Map<String, Double> DEFAULT_EVENT_WEIGHTS = Map.of(
-            "VIEW", 1.0,
-            "LIKE", 3.0,
-            "SAVE", 4.0
-    );
-
     public RecommendationResponse recommendPopular(String period, int limit) {
-        RecommendationStrategy strategy = resolveDefaultStrategy(AlgorithmType.POPULARITY);
-        // тянем все события из event-service с учетом окна period (REST вызов)
-        List<EventDto> allEvents = eventClient.getEvents(null, period);
+        RecommendationStrategy strategy = cloneStrategy(resolveDefaultStrategy(AlgorithmType.POPULARITY));
+        List<EventDto> events = fetchEvents(null, period, GLOBAL_EVENT_LIMIT);
+        Map<Long, Double> popularity = toPopularityMap(eventClient.getStatsByMovie(period));
         RecommendationContext context = RecommendationContext.builder()
                 .limit(limit)
                 .strategy(strategy)
                 .requestedAlgorithm(AlgorithmType.POPULARITY)
                 .userEvents(List.of())
-                .allEvents(allEvents)
-                .seenItemIds(Set.of())
+                .allEvents(events)
+                .seenMovieIds(Set.of())
                 .eventWeights(resolveWeights(strategy))
+                .popularityScores(popularity)
+                .focusMovieId(null)
                 .build();
         return algorithm(AlgorithmType.POPULARITY).recommend(context);
     }
 
-    public RecommendationResponse recommendForUser(Long userId, int limit, String period, AlgorithmType requestedAlgo, Long strategyId) {
-        RecommendationStrategy strategy = resolveStrategy(requestedAlgo, strategyId);
-        // получаем события пользователя и общий поток (REST к event-service) для расчета популярности/похожести
-        List<EventDto> userEvents = eventClient.getEvents(userId, period);
-        List<EventDto> allEvents = eventClient.getEvents(null, period);
+    public RecommendationResponse recommendTrending(String period, int limit) {
+        RecommendationStrategy base = cloneStrategy(resolveDefaultStrategy(AlgorithmType.POPULARITY));
+        base.setTimeDecayHalfLifeDays(7);
+        List<EventDto> events = fetchEvents(null, period != null ? period : "WEEK", GLOBAL_EVENT_LIMIT);
+        Map<Long, Double> popularity = toPopularityMap(eventClient.getStatsByMovie(period));
+        RecommendationContext context = RecommendationContext.builder()
+                .limit(limit)
+                .strategy(base)
+                .requestedAlgorithm(AlgorithmType.POPULARITY)
+                .userEvents(List.of())
+                .allEvents(events)
+                .seenMovieIds(Set.of())
+                .eventWeights(resolveWeights(base))
+                .popularityScores(popularity)
+                .focusMovieId(null)
+                .build();
+        return algorithm(AlgorithmType.POPULARITY).recommend(context);
+    }
 
-        // собираем историю пользователя чтобы не рекомендовать уже просмотренное
-        Set<Long> seen = userEvents.stream().map(EventDto::getItemId).collect(Collectors.toSet());
+    public RecommendationResponse recommendSimilar(Long movieId, int limit) {
+        if (movieId == null) {
+            throw new IllegalArgumentException("movieId is required");
+        }
+        RecommendationStrategy strategy = cloneStrategy(resolveDefaultStrategy(AlgorithmType.CONTENT_BASED));
+        Map<Long, Double> popularity = toPopularityMap(eventClient.getStatsByMovie("WEEK"));
+        RecommendationContext context = RecommendationContext.builder()
+                .limit(limit)
+                .strategy(strategy)
+                .requestedAlgorithm(AlgorithmType.CONTENT_BASED)
+                .userEvents(List.of())
+                .allEvents(List.of())
+                .seenMovieIds(Set.of(movieId))
+                .eventWeights(resolveWeights(strategy))
+                .popularityScores(popularity)
+                .focusMovieId(movieId)
+                .build();
+        return algorithm(AlgorithmType.CONTENT_BASED).recommend(context);
+    }
+
+    public RecommendationResponse recommendForUser(Long userId,
+                                                   int limit,
+                                                   String period,
+                                                   AlgorithmType requestedAlgo,
+                                                   Long strategyId) {
+        RecommendationStrategy strategy = resolveStrategy(requestedAlgo, strategyId);
+        RecommendationStrategy strategySnapshot = cloneStrategy(strategy);
+        List<EventDto> userEvents = fetchEvents(userId, period, 2000);
+        List<EventDto> allEvents = fetchEvents(null, period, GLOBAL_EVENT_LIMIT);
+        Set<Long> seen = userEvents.stream()
+                .map(EventDto::getMovieId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, Double> popularity = toPopularityMap(eventClient.getStatsByMovie(period));
+
         RecommendationContext context = RecommendationContext.builder()
                 .userId(userId)
                 .limit(limit)
-                .strategy(strategy)
+                .strategy(strategySnapshot)
                 .requestedAlgorithm(requestedAlgo)
                 .userEvents(userEvents)
                 .allEvents(allEvents)
-                .seenItemIds(seen)
-                .eventWeights(resolveWeights(strategy))
+                .seenMovieIds(seen)
+                .eventWeights(resolveWeights(strategySnapshot))
+                .popularityScores(popularity)
+                .focusMovieId(null)
                 .build();
 
-        if (strategy.getMinEventsPerUser() != null && userEvents.size() < strategy.getMinEventsPerUser()) {
-            return fallback(context, strategy);
+        if (strategySnapshot.getMinEventsPerUser() != null
+                && userEvents.size() < strategySnapshot.getMinEventsPerUser()) {
+            return fallback(context, strategySnapshot);
         }
 
-        // пробуем выбранный алгоритм и при пустом результате откатываемся на fallback
-        RecommendationResponse response = algorithm(strategy.getAlgorithm()).recommend(context);
-        if (response.getItems().isEmpty() && strategy.getFallbackAlgorithm() != null) {
-            return fallback(context, strategy);
+        RecommendationResponse response = algorithm(strategySnapshot.getAlgorithm()).recommend(context);
+        if (response.getItems().isEmpty() && strategySnapshot.getFallbackAlgorithm() != null) {
+            return fallback(context, strategySnapshot);
         }
         return response;
     }
 
     private RecommendationResponse fallback(RecommendationContext context, RecommendationStrategy strategy) {
-        AlgorithmType fb = Optional.ofNullable(strategy.getFallbackAlgorithm()).orElse(AlgorithmType.POPULARITY);
-        RecommendationStrategy fallbackStrategy = resolveDefaultStrategy(fb);
-        RecommendationContext fbContext = RecommendationContext.builder()
+        AlgorithmType fallbackAlgo = Optional.ofNullable(strategy.getFallbackAlgorithm())
+                .orElse(AlgorithmType.POPULARITY);
+        RecommendationStrategy fallbackStrategy = cloneStrategy(resolveDefaultStrategy(fallbackAlgo));
+        RecommendationContext fallbackContext = RecommendationContext.builder()
                 .userId(context.getUserId())
                 .limit(context.getLimit())
                 .strategy(fallbackStrategy)
-                .requestedAlgorithm(fb)
+                .requestedAlgorithm(fallbackAlgo)
                 .userEvents(context.getUserEvents())
                 .allEvents(context.getAllEvents())
-                .seenItemIds(context.getSeenItemIds())
+                .seenMovieIds(context.getSeenMovieIds())
                 .eventWeights(resolveWeights(fallbackStrategy))
+                .popularityScores(context.getPopularityScores())
+                .focusMovieId(context.getFocusMovieId())
                 .build();
-        return algorithm(fb).recommend(fbContext);
+        return algorithm(fallbackAlgo).recommend(fallbackContext);
+    }
+
+    private List<EventDto> fetchEvents(Long userId, String period, int limit) {
+        List<EventDto> events = eventClient.getEvents(userId, null, null, period, limit);
+        return events == null ? List.of() : events;
+    }
+
+    private Map<Long, Double> toPopularityMap(List<MovieStatDto> stats) {
+        if (stats == null) return Map.of();
+        return stats.stream()
+                .collect(Collectors.toMap(MovieStatDto::getMovieId, stat -> stat.getCount().doubleValue(), Double::sum));
     }
 
     private RecommendationStrategy resolveStrategy(AlgorithmType requestedAlgo, Long strategyId) {
@@ -100,24 +171,41 @@ public class RecommendationService {
             return resolveDefaultStrategy(requestedAlgo);
         }
         return strategyRepository.findByActiveTrue().stream().findFirst()
-                .orElseGet(() -> resolveDefaultStrategy(AlgorithmType.CO_OCCURRENCE));
+                .orElseGet(() -> resolveDefaultStrategy(AlgorithmType.HYBRID));
     }
 
-    private RecommendationStrategy resolveDefaultStrategy(AlgorithmType algo) {
+    private RecommendationStrategy resolveDefaultStrategy(AlgorithmType algorithm) {
         return strategyRepository.findByActiveTrue().stream()
-                .filter(s -> s.getAlgorithm() == algo)
+                .filter(strategy -> strategy.getAlgorithm() == algorithm)
                 .findFirst()
                 .orElseGet(() -> {
                     RecommendationStrategy s = new RecommendationStrategy();
-                    s.setName(algo.name() + " default");
-                    s.setAlgorithm(algo);
+                    s.setName(algorithm.name() + " default");
+                    s.setAlgorithm(algorithm);
                     s.setEventWeights(DEFAULT_EVENT_WEIGHTS);
                     s.setTimeDecayHalfLifeDays(30);
                     s.setMinEventsPerUser(3);
-                    s.setCandidateLimit(200);
+                    s.setCandidateLimit(400);
                     s.setFallbackAlgorithm(AlgorithmType.POPULARITY);
+                    s.setActive(true);
                     return strategyRepository.save(s);
                 });
+    }
+
+    private RecommendationStrategy cloneStrategy(RecommendationStrategy original) {
+        RecommendationStrategy clone = new RecommendationStrategy();
+        clone.setId(original.getId());
+        clone.setName(original.getName());
+        clone.setAlgorithm(original.getAlgorithm());
+        clone.setEventWeights(original.getEventWeights());
+        clone.setTimeDecayHalfLifeDays(original.getTimeDecayHalfLifeDays());
+        clone.setMinEventsPerUser(original.getMinEventsPerUser());
+        clone.setCandidateLimit(original.getCandidateLimit());
+        clone.setFallbackAlgorithm(original.getFallbackAlgorithm());
+        clone.setActive(original.isActive());
+        clone.setCreatedAt(original.getCreatedAt());
+        clone.setUpdatedAt(original.getUpdatedAt());
+        return clone;
     }
 
     private Map<String, Double> resolveWeights(RecommendationStrategy strategy) {
@@ -131,7 +219,7 @@ public class RecommendationService {
 
     private RecommendationAlgorithm algorithm(AlgorithmType type) {
         return algorithms.stream()
-                .filter(a -> a.type() == type)
+                .filter(algo -> algo.type() == type)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Алгоритм не найден: " + type));
     }

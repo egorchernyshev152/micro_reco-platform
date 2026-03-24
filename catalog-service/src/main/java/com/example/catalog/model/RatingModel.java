@@ -10,7 +10,7 @@ import java.time.Instant;
 public class RatingModel {
     Long id;
     Long userId;
-    Long itemId;
+    Long movieId;
     Integer score;
     Instant createdAt;
 }

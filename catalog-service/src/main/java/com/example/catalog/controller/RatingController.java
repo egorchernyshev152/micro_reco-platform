@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class RatingController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Add rating")
+    @PreAuthorize("hasRole('ADMIN')")
     public RatingDto add(@Valid @RequestBody RatingDto dto) {
         // добавляем оценку пользователя товару
         return ratingService.add(dto);
@@ -28,6 +30,7 @@ public class RatingController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update rating")
+    @PreAuthorize("hasRole('ADMIN')")
     public RatingDto update(@PathVariable Long id, @Valid @RequestBody RatingDto dto) {
         // обновляем оценку
         return ratingService.update(id, dto);
@@ -50,6 +53,7 @@ public class RatingController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete rating by id")
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Long id) {
         // удаляем оценку
         ratingService.delete(id);
@@ -62,10 +66,9 @@ public class RatingController {
         return ratingService.byUser(userId);
     }
 
-    @GetMapping("/by-item/{itemId}")
-    @Operation(summary = "Get ratings by item id")
-    public List<RatingDto> byItem(@PathVariable("itemId") Long itemId) {
-        // получаем оценки для выбранного товара
-        return ratingService.byItem(itemId);
+    @GetMapping("/by-movie/{movieId}")
+    @Operation(summary = "Get ratings by movie id")
+    public List<RatingDto> byMovie(@PathVariable("movieId") Long movieId) {
+        return ratingService.byMovie(movieId);
     }
 }

@@ -1,7 +1,7 @@
 package com.example.catalog.mapper;
 
 import com.example.catalog.dto.RatingDto;
-import com.example.catalog.entity.Item;
+import com.example.catalog.entity.Movie;
 import com.example.catalog.entity.Rating;
 import com.example.catalog.entity.User;
 import com.example.catalog.model.RatingModel;
@@ -11,48 +11,44 @@ public final class RatingMapper {
     }
 
     public static RatingModel toModel(Rating entity) {
-        // переводим entity рейтинга в внутреннюю модель
         if (entity == null) return null;
         return RatingModel.builder()
                 .id(entity.getId())
                 .userId(entity.getUser().getId())
-                .itemId(entity.getItem().getId())
+                .movieId(entity.getMovie().getId())
                 .score(entity.getScore())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }
 
-    public static Rating toEntity(RatingModel model, User user, Item item) {
-        // собираем entity рейтинга с уже загруженными связями
+    public static Rating toEntity(RatingModel model, User user, Movie movie) {
         if (model == null) return null;
         return Rating.builder()
                 .id(model.getId())
                 .user(user)
-                .item(item)
+                .movie(movie)
                 .score(model.getScore())
                 .createdAt(model.getCreatedAt())
                 .build();
     }
 
     public static RatingModel fromDto(RatingDto dto) {
-        // конвертируем входной DTO в модель
         if (dto == null) return null;
         return RatingModel.builder()
                 .id(dto.getId())
                 .userId(dto.getUserId())
-                .itemId(dto.getItemId())
+                .movieId(dto.getMovieId())
                 .score(dto.getScore())
                 .createdAt(dto.getCreatedAt())
                 .build();
     }
 
     public static RatingDto toDto(RatingModel model) {
-        // конвертируем модель в DTO для ответа
         if (model == null) return null;
         return RatingDto.builder()
                 .id(model.getId())
                 .userId(model.getUserId())
-                .itemId(model.getItemId())
+                .movieId(model.getMovieId())
                 .score(model.getScore())
                 .createdAt(model.getCreatedAt())
                 .build();

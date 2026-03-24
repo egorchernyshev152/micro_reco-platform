@@ -1,6 +1,5 @@
 package com.example.recommender.model;
 
-import com.example.recommender.dto.ItemDto;
 import com.example.recommender.dto.EventDto;
 import lombok.Builder;
 import lombok.Value;
@@ -18,6 +17,8 @@ public class RecommendationContext {
     AlgorithmType requestedAlgorithm;
     List<EventDto> userEvents;
     List<EventDto> allEvents;
-    Set<Long> seenItemIds;
+    Set<Long> seenMovieIds;
     Map<String, Double> eventWeights;
+    Map<Long, Double> popularityScores;
+    Long focusMovieId;
 }

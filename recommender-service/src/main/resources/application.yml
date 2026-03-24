@@ -33,3 +33,7 @@ clients:
     connect-timeout: 2s
     read-timeout: 5s
     response-timeout: 5s
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173

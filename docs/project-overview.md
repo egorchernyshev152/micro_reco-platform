@@ -10,49 +10,50 @@
 
 ## Сервисы и их ответственность
 ### catalog-service (порт 8081)
-- CRUD по товарам, пользователям, рейтингам.
+- Полноценный каталог кинофильмов: карточки, справочники жанров/стран/тегов, пользовательские рейтинги.
 - REST эндпоинты (основные):
-  - `/items` — CRUD и получение всех товаров.
-  - `/items/search?ids=1,2,3` — карточки по списку id.
-  - `/items/by-categories?categories=cat1,cat2` — товары по категориям.
-  - Аналогично `/users`, `/ratings`.
-- Используется рекомендатором для обогащения выдачи карточками товаров.
+  - `/movies` — поиск с фильтрами (жанры, страны, годы, рейтинги).
+  - `/movies/lookup?ids=1,2,3` — карточки по списку id (используется рекомендатором).
+  - `/movies/all` — тех. выдача всех фильмов (для контентных алгоритмов).
+  - `/movies/{id}/ratings` — работа с пользовательскими оценками.
+  - `/users`, `/ratings` — управление пользователями и их отзывами.
+- Сервис выступает источником атрибутов фильмов для рекомендаций и отчетов.
+- Загрузка контента: `POST /internal/import/tmdb` — защищенный (внутренний) эндпоинт, который запускает импорт фильмов из TMDb. Требует `TMDB_API_KEY`. Параметры позволяют ограничить количество страниц, страну производства (`originCountry`), язык локализации (`language`/`originalLanguage`), пороги рейтингов (`minVoteAverage`, `minVoteCount`). Сервис подтягивает детали фильма, мапит на таблицы `movies`, `movie_genres`, `movie_countries`, `movie_tags`, автоматически подставляет ссылки на постеры/бекдропы (`https://image.tmdb.org/t/p/<size>/<path>`).
 
 ### event-service (порт 8082)
-- Хранит события пользователя по товарам (VIEW/LIKE/SAVE и т.п.).
+- Централизованное хранилище событий пользователя по фильмам (`VIEW_CARD`, `WATCH_TRAILER`, `RATE`, `START/FINISH_WATCHING`, `FAVORITE`, `BOOKMARK`, `SHARE` и т.д.).
 - REST:
-  - `/events` — CRUD, фильтры `userId` и `period=DAY|WEEK|MONTH`.
-  - `/events/stats/by-item` — агрегированная популярность по товарам.
-  - `/events/stats/by-day` — агрегаты по дням.
-- Источник данных для рекомендаций и отчётов.
+  - `/events` — запись и выборка событий. Фильтры: `userId`, `movieId`, `type`, `period`, `source`, `sessionId`, `limit`. Поддерживается batch-интерфейс `/events/bulk`.
+  - `/events/stats/by-movie` — популярность фильмов (для отчётов и алгоритмов).
+  - `/events/stats/by-user` — активность пользователей.
+  - `/events/stats/by-day`, `/events/stats/time-distribution` — агрегаты по дням и часам.
+- Источник данных для рекомендаций, трендов и отчетов.
 
-### recommender-service (порт 8083)
-- API для рекомендаций и отчётов.
-- REST:
-  - `/api/v1/recommendations/popular` — популярное (параметры `period`, `limit`).
-  - `/api/v1/recommendations/user/{userId}` — персональные (параметры `limit`, `period`, `algo`, `strategyId`).
-  - `/reports/top-items` — DOCX отчёт по топ-товарам за период.
+- `/api/v1/movies/popular` — популярные фильмы за период (`limit`, `period`).
+- `/api/v1/movies/trending` — тренды (выше вес свежих событий).
+- `/api/v1/movies/user/{userId}` — персональные рекомендации (параметры `limit`, `period`, `algo`, `strategyId`).
+- `/api/v1/movies/similar/{movieId}` — похожие фильмы по контенту.
+- `/reports/top-movies` — DOCX отчёт по топ-фильмам.
 - Внутренние HTTP клиенты:
-  - `EventClient` → event-service: `GET /events`, `GET /events/stats/by-item`.
-  - `CatalogClient` → catalog-service: `GET /items/search`, `GET /items`, `GET /items/by-categories`.
+  - `EventClient` → event-service: `GET /events`, `GET /events/stats/by-movie`.
+  - `CatalogClient` → catalog-service: `GET /movies`, `/movies/lookup`, `/movies/all`.
 - WebClient конфиг: `recommender-service/src/main/java/com/example/recommender/config/WebClientConfig.java` — таймауты, лог исходящих запросов, превращение любого 4xx/5xx в `WebClientResponseException`. Вызовы блокирующие (`block()`).
 
 ## Потоки данных (основные сценарии)
-1) **Популярные рекомендации**
-   - `EventClient.getEvents(null, period)` → все события.
-   - `RecommendationService` готовит контекст; `PopularityAlgorithm` считает вес событий с временным затуханием.
-   - Список itemId → `CatalogClient.getItemsByIds` → обогащение карточками → ответ клиенту.
+1) **Популярные/трендовые фильмы**
+   - `EventClient.getEvents(null, period)` → событийный поток для взвешивания (время затухания, веса типов).
+   - `EventClient.getStatsByMovie(period)` → агрегаты по фильмам (fallback/гистограммы).
+   - `PopularityAlgorithm` или "Trending" стратегия формирует скоринг и подтягивает карточки через `CatalogClient.getMoviesByIds`.
 
 2) **Персональные рекомендации**
    - `EventClient.getEvents(userId, period)` → история пользователя; `getEvents(null, period)` → общий поток.
-   - Собирается множество просмотренных; выбирается стратегия/алгоритм.
-   - `CooccurrenceAlgorithm` строит матрицу совместных действий, исключает уже виденное, считает кандидатов.
-   - `CatalogClient.getItemsByIds` подтягивает карточки кандидатов; при пустом результате — fallback (обычно популярность).
+   - Собирается множество просмотренных фильмов, выбирается стратегия/алгоритм (co-occurrence, content-based, hybrid).
+   - `CatalogClient.getMoviesByIds` или `getAllMovies` (для контентного подхода) возвращают карточки.
+   - При пустом ответе fallback → популярность.
 
-3) **Отчёт по топ-товарам**
-   - `EventClient.getStatsByItem(period)` → популярность.
-   - `CatalogClient.getItemsByIds` → заголовки товаров.
-   - `ReportService` собирает DOCX и отдаёт файл.
+3) **Похожие фильмы и отчёты**
+   - Контентная матрица строится по метаданным (жанры/страны/теги) из `CatalogClient.getAllMovies`.
+   - `/reports/top-movies` использует `EventClient.getStatsByMovie` + `CatalogClient.getMoviesByIds`, формируя DOCX.
 
 ## Поведение по ошибкам и таймаутам
 - Таймауты соединения/чтения/ответа задаются в `clients.http.*`.
@@ -68,4 +69,4 @@
 - WebClient конфиг: `recommender-service/src/main/java/com/example/recommender/config/WebClientConfig.java`.
 - HTTP клиенты: `recommender-service/src/main/java/com/example/recommender/client/EventClient.java`, `.../CatalogClient.java`.
 - Алгоритмы: `recommender-service/src/main/java/com/example/recommender/service/algorithm/*`.
-- Контроллеры: `recommender-service/src/main/java/com/example/recommender/controller/*`, `event-service/src/main/java/com/example/event/controller/EventController.java`, `catalog-service/src/main/java/com/example/catalog/controller/ItemController.java`.
+- Контроллеры: `recommender-service/src/main/java/com/example/recommender/controller/*`, `event-service/src/main/java/com/example/event/controller/EventController.java`, `catalog-service/src/main/java/com/example/catalog/controller/MovieController.java`.

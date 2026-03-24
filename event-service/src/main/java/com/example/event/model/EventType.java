@@ -1,7 +1,12 @@
 package com.example.event.model;
 
 public enum EventType {
-    VIEW,
-    LIKE,
-    SAVE
+    VIEW_CARD,
+    WATCH_TRAILER,
+    RATE,
+    FAVORITE,
+    BOOKMARK,
+    SHARE,
+    START_WATCHING,
+    FINISH_WATCHING
 }
