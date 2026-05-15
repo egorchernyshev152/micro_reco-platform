@@ -1,6 +1,7 @@
 package com.example.recommender.client;
 
 import com.example.recommender.dto.MovieDto;
+import com.example.recommender.dto.UserProfileDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -13,7 +14,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -30,10 +30,13 @@ public class CatalogClient {
 
     public List<MovieDto> getMoviesByIds(Collection<Long> ids) {
         if (ids == null || ids.isEmpty()) return List.of();
-        String idsParam = ids.stream().map(String::valueOf).collect(Collectors.joining(","));
         return client()
                 .get()
-                .uri(builder -> builder.path("/movies/lookup").queryParam("ids", idsParam).build())
+                .uri(builder -> {
+                    builder.path("/movies/lookup");
+                    ids.forEach(id -> builder.queryParam("ids", id));
+                    return builder.build();
+                })
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<MovieDto>>() {})
@@ -80,6 +83,24 @@ public class CatalogClient {
                     .block();
             return Optional.ofNullable(movie);
         } catch (WebClientResponseException.NotFound ex) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<UserProfileDto> getPublicUserProfile(Long userId) {
+        if (userId == null) {
+            return Optional.empty();
+        }
+        try {
+            UserProfileDto profile = client()
+                    .get()
+                    .uri(builder -> builder.path("/public/users/{id}").build(userId))
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .bodyToMono(UserProfileDto.class)
+                    .block();
+            return Optional.ofNullable(profile);
+        } catch (WebClientResponseException.NotFound | WebClientResponseException.Forbidden ex) {
             return Optional.empty();
         }
     }

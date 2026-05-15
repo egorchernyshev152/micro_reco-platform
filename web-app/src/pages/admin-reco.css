@@ -1,0 +1,119 @@
+.admin-reco {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-reco__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-reco__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.admin-reco__card {
+  background: var(--panel);
+  border-radius: 24px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-reco__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.admin-reco__field input,
+.admin-reco__field select {
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  padding: 10px 12px;
+  background: var(--panel-contrast);
+  color: var(--text);
+}
+
+.admin-reco__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.toggle {
+  border-radius: 20px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.toggle.is-on {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+.reco-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reco-progress__bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.reco-progress__bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.admin-reco__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-reco__filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.admin-reco__filters input {
+  border-radius: 10px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  padding: 8px 12px;
+  background: var(--panel-contrast);
+  color: var(--text);
+  min-width: 140px;
+}
+
+.admin-reco__movies {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.reco-summary {
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 14px;
+}

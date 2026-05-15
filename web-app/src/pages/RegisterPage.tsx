@@ -28,10 +28,38 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="auth-page">
+    <div className="auth-shell">
+      <section className="auth-hero auth-hero--register">
+        <span className="auth-badge">ReMovie</span>
+        <h1>Создайте свой уютный кинотеатр</h1>
+        <p>Расскажите нам пару фактов — и ReMovie подберёт фильмы под вашу атмосферу.</p>
+        <div className="auth-perks">
+          <div>
+            <strong>100+ подборок</strong>
+            <small>По актёрам и жанрам</small>
+          </div>
+          <div>
+            <strong>Живые заметки</strong>
+            <small>Фиксируйте эмоции и цитаты</small>
+          </div>
+          <div>
+            <strong>Синхрон на всех устройствах</strong>
+            <small>Начали дома — продолжили в дороге</small>
+          </div>
+          <div>
+            <strong>Рекомендации по друзьям</strong>
+            <small>Подсматривайте, что смотрят ваши люди</small>
+          </div>
+        </div>
+        <p className="auth-caption">Ваша коллекция воспоминаний начнётся отсюда.</p>
+      </section>
+
       <form className="auth-card" onSubmit={onSubmit}>
-        <h1>Регистрация</h1>
-        <p className="text-muted">Создайте профиль, чтобы сохранять закладки и рекомендации.</p>
+        <div>
+          <p className="auth-card__eyebrow">Присоединяйтесь</p>
+          <h2>Регистрация</h2>
+        <p className="text-muted">Откройте все возможности персональных рекомендаций.</p>
+        </div>
         <label>
           Имя
           <input value={name} onChange={(e) => setName(e.target.value)} required />
@@ -48,7 +76,7 @@ const RegisterPage = () => {
         <button type="submit" disabled={loading}>
           {loading ? 'Создаем…' : 'Создать аккаунт'}
         </button>
-        <p>
+        <p className="auth-switch">
           Уже есть аккаунт? <Link to="/login">Войдите</Link>
         </p>
       </form>

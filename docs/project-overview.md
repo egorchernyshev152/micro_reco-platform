@@ -18,7 +18,7 @@
   - `/movies/{id}/ratings` — работа с пользовательскими оценками.
   - `/users`, `/ratings` — управление пользователями и их отзывами.
 - Сервис выступает источником атрибутов фильмов для рекомендаций и отчетов.
-- Загрузка контента: `POST /internal/import/tmdb` — защищенный (внутренний) эндпоинт, который запускает импорт фильмов из TMDb. Требует `TMDB_API_KEY`. Параметры позволяют ограничить количество страниц, страну производства (`originCountry`), язык локализации (`language`/`originalLanguage`), пороги рейтингов (`minVoteAverage`, `minVoteCount`). Сервис подтягивает детали фильма, мапит на таблицы `movies`, `movie_genres`, `movie_countries`, `movie_tags`, автоматически подставляет ссылки на постеры/бекдропы (`https://image.tmdb.org/t/p/<size>/<path>`).
+- Загрузка контента: `POST /internal/import/tmdb` — защищенный (внутренний) эндпоинт, который запускает импорт фильмов из TMDb. Требует `TMDB_API_KEY`. Параметры позволяют ограничить количество страниц, страну производства (`originCountry` или массив `originCountries`), язык локализации (`language`/`originalLanguage`), пороги рейтингов (`minVoteAverage`, `minVoteCount`). Можно последовательно импортировать разные страны — данные будут дополняться. Сервис подтягивает детали фильма, мапит на таблицы `movies`, `movie_genres`, `movie_countries`, `movie_tags`, автоматически подставляет ссылки на постеры/бекдропы (`https://image.tmdb.org/t/p/<size>/<path>`).
 
 ### event-service (порт 8082)
 - Централизованное хранилище событий пользователя по фильмам (`VIEW_CARD`, `WATCH_TRAILER`, `RATE`, `START/FINISH_WATCHING`, `FAVORITE`, `BOOKMARK`, `SHARE` и т.д.).
@@ -46,7 +46,7 @@
    - `PopularityAlgorithm` или "Trending" стратегия формирует скоринг и подтягивает карточки через `CatalogClient.getMoviesByIds`.
 
 2) **Персональные рекомендации**
-   - `EventClient.getEvents(userId, period)` → история пользователя; `getEvents(null, period)` → общий поток.
+- `EventClient.getEvents(userId, period)` → история пользователя; `getEvents(null, period)` → общий поток.
    - Собирается множество просмотренных фильмов, выбирается стратегия/алгоритм (co-occurrence, content-based, hybrid).
    - `CatalogClient.getMoviesByIds` или `getAllMovies` (для контентного подхода) возвращают карточки.
    - При пустом ответе fallback → популярность.
@@ -54,6 +54,13 @@
 3) **Похожие фильмы и отчёты**
    - Контентная матрица строится по метаданным (жанры/страны/теги) из `CatalogClient.getAllMovies`.
    - `/reports/top-movies` использует `EventClient.getStatsByMovie` + `CatalogClient.getMoviesByIds`, формируя DOCX.
+
+## Блок 6. Admin analytics
+- REST (`recommender-service`): `/api/admin/analytics/summary|popularity|activity|recommendations`.
+- Источник данных — `event-service` (`getStats*`, `getEvents`), агрегирование выполняется в `AdminAnalyticsService` с обогащением карточками через `CatalogClient`.
+- Покрываем KPI: общее число событий, активные пользователи, распределение по сегментам, топ фильмов (с долями/типами событий), нагрузка по часам, эффективность рекомендаций (клики/старты/досмотры/рейтинги + разбивка по алгоритмам).
+- Рекомендательные метрики вычисляются по событиям `source=RECOMMENDER`/`payload.recommendation=true` (см. демо-данные `event-service/src/main/resources/data.sql`).
+- Фронт (`web-app`/`AdminPage.tsx`) запрашивает выбранный период и рисует тренды в Recharts (line/bar) + KPI карточки.
 
 ## Поведение по ошибкам и таймаутам
 - Таймауты соединения/чтения/ответа задаются в `clients.http.*`.
@@ -63,6 +70,10 @@
 ## Примечания по протоколам
 - Сейчас HTTP/1.1. HTTP/2 можно включить без смены контрактов, если понадобится мультиплексирование/меньше накладных расходов (требует H2+TLS и поддержки на клиенте/сервере).
 - gRPC имеет смысл обсуждать при очень высоком RPS, строгих SLO по задержкам или необходимости стриминга; иначе REST достаточен, лучше инвестировать в ретраи, circuit breaker, метрики/трейсинг.
+
+## Демонстрационные данные
+- В каталоге `demo-data` лежат два SQL-дампа: `catalog-demo-data.sql` и `event-demo-data.sql`. Они заполняют фильмы, пользователей, коллекции, рейтинги и события для демонстрации рекомендаций без импорта TMDb.
+- Подробная инструкция — в `docs/demo-data.md`. Там же описаны тестовые аккаунты (включая «чистого» пользователя без истории) и список полезных API-запросов для проверки.
 
 ## Где смотреть код
 - Конфиги: `recommender-service/src/main/resources/application.yml`.

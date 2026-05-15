@@ -6,6 +6,7 @@ import com.example.catalog.entity.Rating;
 import com.example.catalog.entity.User;
 import com.example.catalog.exception.ConflictException;
 import com.example.catalog.exception.NotFoundException;
+import com.example.catalog.integration.event.EventPublisher;
 import com.example.catalog.mapper.RatingMapper;
 import com.example.catalog.model.RatingModel;
 import com.example.catalog.repository.MovieRepository;
@@ -23,6 +24,7 @@ public class RatingService {
     private final RatingRepository ratingRepository;
     private final UserRepository userRepository;
     private final MovieRepository movieRepository;
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public RatingDto add(RatingDto dto) {
@@ -91,6 +93,7 @@ public class RatingService {
         rating.setScore(score);
         Rating saved = ratingRepository.save(rating);
         refreshMovieStats(movieId);
+        eventPublisher.publishRatingEvent(userId, movieId, score);
         return RatingMapper.toDto(RatingMapper.toModel(saved));
     }
 
@@ -133,7 +136,7 @@ public class RatingService {
                 .orElseThrow(() -> new NotFoundException("Movie not found: " + movieId));
         Double avg = ratingRepository.calculateAverageScore(movieId);
         long count = ratingRepository.countByMovie_Id(movieId);
-        movie.setAverageRating(avg == null ? null : Math.round(avg * 100.0) / 100.0);
+        movie.setAverageRating(avg == null ? movie.getImportedRating() : Math.round(avg * 100.0) / 100.0);
         movie.setRatingsCount(count);
         movieRepository.save(movie);
     }

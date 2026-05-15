@@ -1,0 +1,15 @@
+.git
+.idea
+.codex
+.env
+.env.*
+!.env.example
+.m2
+.mvn
+**/target
+**/node_modules
+**/dist
+**/.DS_Store
+*.iml
+docs
+demo-data

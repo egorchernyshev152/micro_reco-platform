@@ -17,6 +17,12 @@ public class UserDto {
     private String name;
     private String email;
     private UserRole role;
+    private boolean blocked;
+    private boolean profilePrivate;
+    private Instant roleChangedAt;
+    private String roleChangedBy;
+    private Instant blockedChangedAt;
+    private String blockedChangedBy;
     private Instant createdAt;
     private Instant updatedAt;
 }

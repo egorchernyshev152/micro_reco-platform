@@ -1,0 +1,1 @@
+ALTER TABLE movies ADD COLUMN IF NOT EXISTS imported_rating NUMERIC(4, 2);

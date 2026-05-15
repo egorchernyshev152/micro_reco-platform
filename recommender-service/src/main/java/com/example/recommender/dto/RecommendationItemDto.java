@@ -14,4 +14,5 @@ public class RecommendationItemDto {
     private double score;
     private Double popularityScore;
     private Double contentScore;
+    private Double collaborativeScore;
 }

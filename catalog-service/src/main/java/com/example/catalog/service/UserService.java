@@ -30,6 +30,10 @@ public class UserService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setRole(request.getRole());
+        user.setBlocked(false);
+        if (request.getProfilePrivate() != null) {
+            user.setProfilePrivate(request.getProfilePrivate());
+        }
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         return UserMapper.toDto(UserMapper.toModel(userRepository.save(user)));
     }
@@ -41,6 +45,7 @@ public class UserService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setRole(request.getRole());
+        user.setProfilePrivate(Boolean.TRUE.equals(request.getProfilePrivate()));
         if (StringUtils.hasText(request.getPassword())) {
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }

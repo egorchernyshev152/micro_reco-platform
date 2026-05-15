@@ -43,6 +43,24 @@ public class User {
     @Column(nullable = false, length = 32)
     private UserRole role;
 
+    @Column(nullable = false)
+    private boolean blocked;
+
+    @Column(name = "profile_private", nullable = false)
+    private boolean profilePrivate;
+
+    @Column(name = "role_changed_at")
+    private Instant roleChangedAt;
+
+    @Column(name = "role_changed_by")
+    private String roleChangedBy;
+
+    @Column(name = "blocked_changed_at")
+    private Instant blockedChangedAt;
+
+    @Column(name = "blocked_changed_by")
+    private String blockedChangedBy;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

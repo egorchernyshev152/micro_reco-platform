@@ -97,6 +97,7 @@ public class CooccurrenceAlgorithm implements RecommendationAlgorithm {
                 .map(movie -> RecommendationItemDto.builder()
                         .movie(movie)
                         .score(candidateScores.getOrDefault(movie.getId(), 0.0))
+                        .collaborativeScore(candidateScores.getOrDefault(movie.getId(), 0.0))
                         .build())
                 .collect(Collectors.toList());
 

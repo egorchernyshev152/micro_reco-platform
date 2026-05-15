@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1200" viewBox="0 0 2200 1200">
+  <defs>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 14 7 L 0 14 z" fill="#111"/>
+    </marker>
+    <style>
+      .box {
+        fill: #fff;
+        stroke: #111;
+        stroke-width: 2.2;
+      }
+      .arrow {
+        fill: none;
+        stroke: #111;
+        stroke-width: 2.2;
+        marker-end: url(#arrow);
+      }
+      .text {
+        font-family: "Times New Roman", serif;
+        fill: #000;
+      }
+      .block {
+        font-size: 22px;
+      }
+      .label {
+        font-size: 22px;
+      }
+      .flow {
+        font-size: 19px;
+        paint-order: stroke;
+        stroke: #fff;
+        stroke-width: 7px;
+        stroke-linejoin: round;
+      }
+      .mechanism {
+        font-size: 20px;
+      }
+    </style>
+  </defs>
+
+  <rect width="2200" height="1200" fill="#fff"/>
+
+  <!-- Блоки декомпозиции -->
+  <rect class="box" x="330" y="285" width="300" height="125"/>
+  <text class="text block" text-anchor="middle">
+    <tspan x="480" y="318">A1</tspan>
+    <tspan x="480" y="348">Аутентифицировать</tspan>
+    <tspan x="480" y="376">и авторизовать</tspan>
+    <tspan x="480" y="404">пользователя</tspan>
+  </text>
+
+  <rect class="box" x="740" y="465" width="390" height="135"/>
+  <text class="text block" text-anchor="middle">
+    <tspan x="935" y="498">A2</tspan>
+    <tspan x="935" y="528">Управлять каталогом</tspan>
+    <tspan x="935" y="556">фильмов и пользовательским</tspan>
+    <tspan x="935" y="584">контентом</tspan>
+  </text>
+
+  <rect class="box" x="1240" y="300" width="360" height="130"/>
+  <text class="text block" text-anchor="middle">
+    <tspan x="1420" y="333">A3</tspan>
+    <tspan x="1420" y="363">Фиксировать события</tspan>
+    <tspan x="1420" y="391">и рассчитывать</tspan>
+    <tspan x="1420" y="419">статистику</tspan>
+  </text>
+
+  <rect class="box" x="1710" y="500" width="340" height="130"/>
+  <text class="text block" text-anchor="middle">
+    <tspan x="1880" y="533">A4</tspan>
+    <tspan x="1880" y="563">Формировать</tspan>
+    <tspan x="1880" y="591">рекомендации</tspan>
+    <tspan x="1880" y="619">фильмов</tspan>
+  </text>
+
+  <rect class="box" x="1140" y="800" width="400" height="140"/>
+  <text class="text block" text-anchor="middle">
+    <tspan x="1340" y="835">A5</tspan>
+    <tspan x="1340" y="866">Администрировать платформу</tspan>
+    <tspan x="1340" y="894">и анализировать работу</tspan>
+    <tspan x="1340" y="922">системы</tspan>
+  </text>
+
+  <!-- Входы -->
+  <text class="text label" text-anchor="end">
+    <tspan x="260" y="325">Регистрация, вход</tspan>
+    <tspan x="260" y="353">и запросы пользователя</tspan>
+  </text>
+  <path class="arrow" d="M 280 345 L 330 345"/>
+
+  <text class="text label" text-anchor="end">
+    <tspan x="260" y="520">Поиск, оценки, отзывы,</tspan>
+    <tspan x="260" y="548">коллекции фильмов</tspan>
+  </text>
+  <path class="arrow" d="M 280 540 L 700 540 L 700 532 L 740 532"/>
+
+  <text class="text label" text-anchor="end">
+    <tspan x="260" y="845">Команды</tspan>
+    <tspan x="260" y="873">администратора</tspan>
+  </text>
+  <path class="arrow" d="M 280 860 L 1040 860 L 1040 850 L 1140 850"/>
+
+  <text class="text label" text-anchor="end">
+    <tspan x="260" y="1000">Данные TMDb</tspan>
+    <tspan x="260" y="1028">о фильмах</tspan>
+  </text>
+  <path class="arrow" d="M 280 1015 L 1040 1015 L 1040 900 L 1140 900"/>
+
+  <!-- Управления -->
+  <text class="text label" text-anchor="middle">
+    <tspan x="480" y="78">Политики безопасности</tspan>
+    <tspan x="480" y="106">и доступа</tspan>
+  </text>
+  <path class="arrow" d="M 480 128 L 480 285"/>
+
+  <text class="text label" text-anchor="middle">
+    <tspan x="935" y="70">Правила фильтрации</tspan>
+    <tspan x="935" y="98">каталога и модерации</tspan>
+  </text>
+  <path class="arrow" d="M 935 120 L 935 465"/>
+
+  <text class="text label" text-anchor="middle">
+    <tspan x="1420" y="78">Период и параметры</tspan>
+    <tspan x="1420" y="106">статистики событий</tspan>
+  </text>
+  <path class="arrow" d="M 1420 128 L 1420 300"/>
+
+  <text class="text label" text-anchor="middle">
+    <tspan x="1880" y="70">Конфигурация рекомендаций</tspan>
+    <tspan x="1880" y="98">алгоритм, веса, лимиты</tspan>
+  </text>
+  <path class="arrow" d="M 1880 120 L 1880 500"/>
+
+  <!-- Внутренние потоки -->
+  <text class="text flow" text-anchor="middle" x="690" y="327">JWT, ID пользователя, роль</text>
+  <path class="arrow" d="M 630 350 L 690 350 L 690 500 L 740 500"/>
+
+  <text class="text flow" text-anchor="middle">
+    <tspan x="1130" y="210">ID пользователя</tspan>
+    <tspan x="1130" y="234">для персонализации</tspan>
+  </text>
+  <path class="arrow" d="M 630 390 L 680 390 L 680 250 L 1780 250 L 1780 500"/>
+
+  <text class="text flow" text-anchor="middle" x="715" y="742">роль ADMIN</text>
+  <path class="arrow" d="M 480 410 L 480 760 L 1140 760 L 1140 830"/>
+
+  <text class="text flow" text-anchor="middle" x="1210" y="500">события действий</text>
+  <path class="arrow" d="M 1130 520 L 1195 520 L 1195 365 L 1240 365"/>
+
+  <text class="text flow" text-anchor="middle" x="1360" y="630">данные фильмов</text>
+  <path class="arrow" d="M 1130 570 L 1510 570 L 1510 565 L 1710 565"/>
+
+  <text class="text flow" text-anchor="middle">
+    <tspan x="1645" y="348">история событий</tspan>
+    <tspan x="1645" y="372">и статистика</tspan>
+  </text>
+  <path class="arrow" d="M 1600 365 L 1660 365 L 1660 535 L 1710 535"/>
+
+  <text class="text flow" text-anchor="middle" x="1610" y="720">статистика активности</text>
+  <path class="arrow" d="M 1420 430 L 1420 735 L 1600 735 L 1600 870 L 1540 870"/>
+
+  <text class="text flow" text-anchor="middle" x="935" y="805">управление каталогом</text>
+  <path class="arrow" d="M 1140 845 L 900 845 L 900 600"/>
+
+  <text class="text flow" text-anchor="middle" x="1650" y="815">стратегии и rebuild</text>
+  <path class="arrow" d="M 1540 850 L 1640 850 L 1640 630 L 1710 630"/>
+
+  <!-- Выходы -->
+  <text class="text label">
+    <tspan x="2105" y="292">Результат входа,</tspan>
+    <tspan x="2105" y="320">JWT и профиль</tspan>
+  </text>
+  <path class="arrow" d="M 630 315 L 720 315 L 720 185 L 2070 185 L 2070 306 L 2090 306"/>
+
+  <text class="text label">
+    <tspan x="2105" y="442">Каталог, карточки,</tspan>
+    <tspan x="2105" y="470">коллекции, отзывы</tspan>
+  </text>
+  <path class="arrow" d="M 1130 600 L 1660 600 L 1660 455 L 2090 455"/>
+
+  <text class="text label">
+    <tspan x="2105" y="552">Рекомендации</tspan>
+    <tspan x="2105" y="580">фильмов</tspan>
+  </text>
+  <path class="arrow" d="M 2050 565 L 2090 565"/>
+
+  <text class="text label">
+    <tspan x="2105" y="770">Аналитика, отчёты</tspan>
+    <tspan x="2105" y="798">и логи пересчёта</tspan>
+  </text>
+  <path class="arrow" d="M 1540 905 L 2070 905 L 2070 785 L 2090 785"/>
+
+  <!-- Механизмы -->
+  <text class="text mechanism" text-anchor="middle">
+    <tspan x="480" y="1080">Web-приложение</tspan>
+    <tspan x="480" y="1106">React</tspan>
+  </text>
+  <path class="arrow" d="M 480 1050 L 480 410"/>
+
+  <text class="text mechanism" text-anchor="middle" x="935" y="1090">catalog-service</text>
+  <path class="arrow" d="M 935 1050 L 935 600"/>
+
+  <text class="text mechanism" text-anchor="middle" x="1420" y="1090">event-service</text>
+  <path class="arrow" d="M 1650 1050 L 1650 735 L 1510 735 L 1510 430"/>
+
+  <text class="text mechanism" text-anchor="middle" x="1880" y="1090">recommender-service</text>
+  <path class="arrow" d="M 1880 1050 L 1880 630"/>
+
+  <text class="text mechanism" text-anchor="middle">
+    <tspan x="1340" y="1080">PostgreSQL</tspan>
+    <tspan x="1340" y="1106">catalog-db, event-db, recommender-db</tspan>
+  </text>
+  <path class="arrow" d="M 1340 1050 L 1340 940"/>
+</svg>

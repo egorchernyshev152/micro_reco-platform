@@ -27,6 +27,9 @@ public class StrategyService {
         strategy.setTimeDecayHalfLifeDays(request.getTimeDecayHalfLifeDays());
         strategy.setMinEventsPerUser(request.getMinEventsPerUser());
         strategy.setCandidateLimit(request.getCandidateLimit());
+        strategy.setContentWeight(request.getContentWeight());
+        strategy.setCollaborativeWeight(request.getCollaborativeWeight());
+        strategy.setPopularityWeight(request.getPopularityWeight());
         strategy.setFallbackAlgorithm(request.getFallbackAlgorithm());
         strategy.setActive(request.getIsActive() == null || request.getIsActive());
         RecommendationStrategy saved = repository.save(strategy);
@@ -55,6 +58,9 @@ public class StrategyService {
         strategy.setTimeDecayHalfLifeDays(request.getTimeDecayHalfLifeDays());
         strategy.setMinEventsPerUser(request.getMinEventsPerUser());
         strategy.setCandidateLimit(request.getCandidateLimit());
+        strategy.setContentWeight(request.getContentWeight());
+        strategy.setCollaborativeWeight(request.getCollaborativeWeight());
+        strategy.setPopularityWeight(request.getPopularityWeight());
         strategy.setFallbackAlgorithm(request.getFallbackAlgorithm());
         if (request.getIsActive() != null) {
             strategy.setActive(request.getIsActive());
@@ -79,6 +85,9 @@ public class StrategyService {
                 .timeDecayHalfLifeDays(s.getTimeDecayHalfLifeDays())
                 .minEventsPerUser(s.getMinEventsPerUser())
                 .candidateLimit(s.getCandidateLimit())
+                .contentWeight(s.getContentWeight())
+                .collaborativeWeight(s.getCollaborativeWeight())
+                .popularityWeight(s.getPopularityWeight())
                 .fallbackAlgorithm(s.getFallbackAlgorithm())
                 .isActive(s.isActive())
                 .createdAt(s.getCreatedAt())

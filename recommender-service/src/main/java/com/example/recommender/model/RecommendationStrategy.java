@@ -39,6 +39,15 @@ public class RecommendationStrategy {
     @Column(name = "candidate_limit")
     private Integer candidateLimit;
 
+    @Column(name = "content_weight")
+    private Double contentWeight;
+
+    @Column(name = "collaborative_weight")
+    private Double collaborativeWeight;
+
+    @Column(name = "popularity_weight")
+    private Double popularityWeight;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "fallback_algorithm")
     private AlgorithmType fallbackAlgorithm;

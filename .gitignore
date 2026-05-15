@@ -27,6 +27,27 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Local environment ###
+.env
+.env.*
+!.env.example
+web-app/.env
+web-app/.env.*
+!web-app/.env.example
+
+### Build output and dependencies ###
+**/target/
+.m2/
+.codex
+.codex/
+*.tsbuildinfo
+web-app/node_modules/
+web-app/dist/
+web-app/.vite/
+web-app/vite.config.js
+web-app/vite.config.d.ts
+
 # Project exclude paths
 /catalog-service/target/
 /event-service/target/

@@ -1,0 +1,55 @@
+.shelf {
+  margin-top: 26px;
+}
+
+.shelf__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.shelf__header h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.shelf__header span {
+  font-size: 28px;
+  color: var(--text-muted);
+}
+
+.shelf__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.shelf__placeholder {
+  height: 280px;
+  border-radius: 26px;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+  background-size: 200% 200%;
+  animation: shelfPulse 1.8s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@keyframes shelfPulse {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@media (max-width: 1100px) {
+  .shelf__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -29,10 +29,15 @@ logging:
 app:
   cors:
     allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+  assets:
+    storage-type: local
+    local:
+      base-dir: ${ASSETS_BASE_DIR:${user.home}/.micro-reco/assets}
+      public-url: ${ASSETS_PUBLIC_URL:http://localhost:8081/assets}
 
 security:
   jwt:
-    secret: ${JWT_SECRET:super-secret-demo-key-change-me-please-123456}
+    secret: ${JWT_SECRET:change-me-local-dev-secret-change-me-local-dev-secret}
     issuer: reco-platform
     expiration-seconds: 43200
 
@@ -43,8 +48,13 @@ springdoc:
     enabled: true
     path: /swagger-ui.html
 
+clients:
+  event:
+    base-url: http://localhost:8082
+    source: CATALOG
+
 tmdb:
-  api-key: ${TMDB_API_KEY:1b48504b5de8a39ab0d622f9d1b4da73}
+  api-key: ${TMDB_API_KEY:change-me}
   base-url: https://api.themoviedb.org/3
   image-base-url: https://image.tmdb.org/t/p
   poster-size: w500

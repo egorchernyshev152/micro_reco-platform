@@ -1,21 +1,171 @@
+name: micro-reco-platform
+
+x-spring-env: &spring-env
+  SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+  SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+  SERVER_SHUTDOWN: graceful
+  JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=75.0 -XX:+UseContainerSupport}
+
+x-service-logging: &service-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
-    image: postgres:16
-    container_name: reco-postgres
+    image: postgres:16-alpine
     restart: unless-stopped
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
       - ./db-init/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\""]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
+    networks:
+      - backend
+    logging: *service-logging
+
+  event-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        MODULE: event-service
+        SERVICE_PORT: 8082
+    restart: unless-stopped
+    ports:
+      - "${EVENT_SERVICE_PORT:-8082}:8082"
+    environment:
+      <<: *spring-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/event-db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+    networks:
+      - backend
+    logging: *service-logging
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        MODULE: catalog-service
+        SERVICE_PORT: 8081
+    restart: unless-stopped
+    ports:
+      - "${CATALOG_SERVICE_PORT:-8081}:8081"
+    environment:
+      <<: *spring-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/catalog-db
+      CLIENTS_EVENT_BASE_URL: http://event-service:8082
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      ASSETS_BASE_DIR: /app/assets
+      ASSETS_PUBLIC_URL: ${ASSETS_PUBLIC_URL:-http://localhost:5173/api/catalog/assets}
+      JWT_SECRET: ${JWT_SECRET:-change-me-local-dev-secret-change-me-local-dev-secret}
+      TMDB_API_KEY: ${TMDB_API_KEY:-change-me}
+      TMDB_PROXY_HOST: ${TMDB_PROXY_HOST:-}
+      TMDB_PROXY_PORT: ${TMDB_PROXY_PORT:-0}
+      TMDB_PROXY_USERNAME: ${TMDB_PROXY_USERNAME:-}
+      TMDB_PROXY_PASSWORD: ${TMDB_PROXY_PASSWORD:-}
+    volumes:
+      - catalog-assets:/app/assets
+    depends_on:
+      postgres:
+        condition: service_healthy
+      event-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+    networks:
+      - backend
+    logging: *service-logging
+
+  recommender-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        MODULE: recommender-service
+        SERVICE_PORT: 8083
+    restart: unless-stopped
+    ports:
+      - "${RECOMMENDER_SERVICE_PORT:-8083}:8083"
+    environment:
+      <<: *spring-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/recommender-db
+      CLIENTS_CATALOG_BASE_URL: http://catalog-service:8081
+      CLIENTS_EVENT_BASE_URL: http://event-service:8082
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      event-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+    networks:
+      - backend
+    logging: *service-logging
+
+  web-app:
+    build:
+      context: ./web-app
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/recommender}
+        VITE_CATALOG_API_URL: ${VITE_CATALOG_API_URL:-/api/catalog}
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-5173}:80"
+    depends_on:
+      catalog-service:
+        condition: service_healthy
+      recommender-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - frontend
+      - backend
+    logging: *service-logging
 
 volumes:
-  pgdata:
+  postgres-data:
+  catalog-assets:
+
+networks:
+  frontend:
+  backend:

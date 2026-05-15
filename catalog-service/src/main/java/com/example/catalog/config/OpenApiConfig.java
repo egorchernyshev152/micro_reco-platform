@@ -11,12 +11,11 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
     @Bean
     public OpenAPI openAPI() {
-        // описание публичного REST API каталога (пользователи, товары, рейтинги)
         return new OpenAPI()
                 .components(new Components())
                 .info(new Info()
                         .title("Catalog Service API")
-                        .description("API for users, items, ratings")
+                        .description("API for movie catalog CRUD, metadata, ratings and asset management")
                         .version("1.0.0")
                         .contact(new Contact().name("Catalog Team")));
     }

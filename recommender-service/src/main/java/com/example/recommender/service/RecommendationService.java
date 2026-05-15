@@ -1,8 +1,11 @@
 package com.example.recommender.service;
 
+import com.example.recommender.client.CatalogClient;
 import com.example.recommender.client.EventClient;
 import com.example.recommender.dto.EventDto;
+import com.example.recommender.dto.MovieDto;
 import com.example.recommender.dto.MovieStatDto;
+import com.example.recommender.dto.RecommendationItemDto;
 import com.example.recommender.dto.RecommendationResponse;
 import com.example.recommender.model.AlgorithmType;
 import com.example.recommender.model.RecommendationContext;
@@ -12,6 +15,7 @@ import com.example.recommender.service.algorithm.RecommendationAlgorithm;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,12 +32,18 @@ public class RecommendationService {
             "SHARE", 2.0,
             "START_WATCHING", 3.0,
             "FINISH_WATCHING", 5.0,
-            "RATE", 4.5
+            "RATE", 4.5,
+            "FAVORITE_ACTOR", 3.5
     );
+    private static final double DEFAULT_CONTENT_WEIGHT = 0.6;
+    private static final double DEFAULT_COLLABORATIVE_WEIGHT = 0.3;
+    private static final double DEFAULT_POPULARITY_WEIGHT = 0.4;
 
     private final EventClient eventClient;
+    private final CatalogClient catalogClient;
     private final RecommendationStrategyRepository strategyRepository;
     private final List<RecommendationAlgorithm> algorithms;
+    private final UserPreferenceService userPreferenceService;
 
     public RecommendationResponse recommendPopular(String period, int limit) {
         RecommendationStrategy strategy = cloneStrategy(resolveDefaultStrategy(AlgorithmType.POPULARITY));
@@ -50,7 +60,11 @@ public class RecommendationService {
                 .popularityScores(popularity)
                 .focusMovieId(null)
                 .build();
-        return algorithm(AlgorithmType.POPULARITY).recommend(context);
+        RecommendationResponse response = algorithm(AlgorithmType.POPULARITY).recommend(context);
+        if (response.getItems().isEmpty()) {
+            return fallbackFromCatalog(AlgorithmType.POPULARITY, strategy.getId(), limit);
+        }
+        return response;
     }
 
     public RecommendationResponse recommendTrending(String period, int limit) {
@@ -69,7 +83,11 @@ public class RecommendationService {
                 .popularityScores(popularity)
                 .focusMovieId(null)
                 .build();
-        return algorithm(AlgorithmType.POPULARITY).recommend(context);
+        RecommendationResponse response = algorithm(AlgorithmType.POPULARITY).recommend(context);
+        if (response.getItems().isEmpty()) {
+            return fallbackFromCatalog(AlgorithmType.POPULARITY, base.getId(), limit);
+        }
+        return response;
     }
 
     public RecommendationResponse recommendSimilar(Long movieId, int limit) {
@@ -89,7 +107,11 @@ public class RecommendationService {
                 .popularityScores(popularity)
                 .focusMovieId(movieId)
                 .build();
-        return algorithm(AlgorithmType.CONTENT_BASED).recommend(context);
+        RecommendationResponse response = algorithm(AlgorithmType.CONTENT_BASED).recommend(context);
+        if (response.getItems().isEmpty()) {
+            return fallbackFromCatalog(AlgorithmType.CONTENT_BASED, strategy.getId(), limit);
+        }
+        return response;
     }
 
     public RecommendationResponse recommendForUser(Long userId,
@@ -129,7 +151,10 @@ public class RecommendationService {
         if (response.getItems().isEmpty() && strategySnapshot.getFallbackAlgorithm() != null) {
             return fallback(context, strategySnapshot);
         }
-        return response;
+        if (response.getItems().isEmpty()) {
+            return personalize(context.getUserId(), fallbackFromCatalog(strategySnapshot.getAlgorithm(), strategySnapshot.getId(), limit));
+        }
+        return personalize(context.getUserId(), response);
     }
 
     private RecommendationResponse fallback(RecommendationContext context, RecommendationStrategy strategy) {
@@ -148,11 +173,16 @@ public class RecommendationService {
                 .popularityScores(context.getPopularityScores())
                 .focusMovieId(context.getFocusMovieId())
                 .build();
-        return algorithm(fallbackAlgo).recommend(fallbackContext);
+        RecommendationResponse response = algorithm(fallbackAlgo).recommend(fallbackContext);
+        if (response.getItems().isEmpty()) {
+            return personalize(fallbackContext.getUserId(),
+                    fallbackFromCatalog(fallbackAlgo, fallbackStrategy.getId(), fallbackContext.getLimit()));
+        }
+        return personalize(fallbackContext.getUserId(), response);
     }
 
     private List<EventDto> fetchEvents(Long userId, String period, int limit) {
-        List<EventDto> events = eventClient.getEvents(userId, null, null, period, limit);
+        List<EventDto> events = eventClient.getEvents(userId, null, null, period, limit, null);
         return events == null ? List.of() : events;
     }
 
@@ -186,6 +216,9 @@ public class RecommendationService {
                     s.setTimeDecayHalfLifeDays(30);
                     s.setMinEventsPerUser(3);
                     s.setCandidateLimit(400);
+                    s.setContentWeight(DEFAULT_CONTENT_WEIGHT);
+                    s.setCollaborativeWeight(DEFAULT_COLLABORATIVE_WEIGHT);
+                    s.setPopularityWeight(DEFAULT_POPULARITY_WEIGHT);
                     s.setFallbackAlgorithm(AlgorithmType.POPULARITY);
                     s.setActive(true);
                     return strategyRepository.save(s);
@@ -201,6 +234,9 @@ public class RecommendationService {
         clone.setTimeDecayHalfLifeDays(original.getTimeDecayHalfLifeDays());
         clone.setMinEventsPerUser(original.getMinEventsPerUser());
         clone.setCandidateLimit(original.getCandidateLimit());
+        clone.setContentWeight(original.getContentWeight());
+        clone.setCollaborativeWeight(original.getCollaborativeWeight());
+        clone.setPopularityWeight(original.getPopularityWeight());
         clone.setFallbackAlgorithm(original.getFallbackAlgorithm());
         clone.setActive(original.isActive());
         clone.setCreatedAt(original.getCreatedAt());
@@ -222,5 +258,48 @@ public class RecommendationService {
                 .filter(algo -> algo.type() == type)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Алгоритм не найден: " + type));
+    }
+
+    private RecommendationResponse fallbackFromCatalog(AlgorithmType algorithmType, Long strategyId, int limit) {
+        List<MovieDto> movies = catalogClient.getAllMovies();
+        if (movies == null || movies.isEmpty()) {
+            return RecommendationResponse.builder()
+                    .algorithm(algorithmType)
+                    .strategyId(strategyId)
+                    .generatedAt(Instant.now())
+                    .items(List.of())
+                    .build();
+        }
+        Comparator<MovieDto> comparator = Comparator
+                .comparing((MovieDto movie) -> Optional.ofNullable(movie.getAverageRating()).orElse(0.0))
+                .reversed()
+                .thenComparing(movie -> Optional.ofNullable(movie.getReleaseYear()).orElse(0), Comparator.reverseOrder())
+                .thenComparing(movie -> Optional.ofNullable(movie.getTitle()).orElse(""),
+                        Comparator.naturalOrder());
+
+        List<RecommendationItemDto> items = movies.stream()
+                .filter(Objects::nonNull)
+                .sorted(comparator)
+                .limit(limit)
+                .map(movie -> RecommendationItemDto.builder()
+                        .movie(movie)
+                        .score(Optional.ofNullable(movie.getAverageRating()).orElse(0.0))
+                        .popularityScore(Optional.ofNullable(movie.getRatingsCount()).map(Long::doubleValue).orElse(null))
+                        .build())
+                .toList();
+
+        return RecommendationResponse.builder()
+                .algorithm(algorithmType)
+                .strategyId(strategyId)
+                .generatedAt(Instant.now())
+                .items(items)
+                .build();
+    }
+
+    private RecommendationResponse personalize(Long userId, RecommendationResponse response) {
+        if (userId != null) {
+            userPreferenceService.applyUserPreferences(userId, response);
+        }
+        return response;
     }
 }

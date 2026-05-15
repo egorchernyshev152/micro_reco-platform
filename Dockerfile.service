@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1.7
+
+FROM maven:3.9-eclipse-temurin-17 AS build
+
+WORKDIR /app
+
+ARG MODULE
+
+COPY pom.xml .
+COPY catalog-service/pom.xml catalog-service/pom.xml
+COPY event-service/pom.xml event-service/pom.xml
+COPY recommender-service/pom.xml recommender-service/pom.xml
+COPY scripts/pom.xml scripts/pom.xml
+
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -pl ${MODULE} -am dependency:go-offline
+
+COPY catalog-service catalog-service
+COPY event-service event-service
+COPY recommender-service recommender-service
+COPY scripts scripts
+
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -pl ${MODULE} -am package -DskipTests
+
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+ARG MODULE
+ARG SERVICE_PORT=8080
+
+RUN addgroup -S app \
+    && adduser -S app -G app
+
+COPY --from=build /app/${MODULE}/target/*.jar app.jar
+
+RUN chown -R app:app /app
+
+USER app
+
+EXPOSE ${SERVICE_PORT}
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

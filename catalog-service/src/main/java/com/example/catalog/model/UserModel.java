@@ -14,6 +14,12 @@ public class UserModel {
     String email;
     String passwordHash;
     UserRole role;
+    boolean blocked;
+    boolean profilePrivate;
+    Instant roleChangedAt;
+    String roleChangedBy;
+    Instant blockedChangedAt;
+    String blockedChangedBy;
     Instant createdAt;
     Instant updatedAt;
 }

@@ -76,16 +76,42 @@ paths:
       tags: [Maintenance]
       summary: Пересчет матрицы co-occurrence/кэша
       description: Стартует фоновой пересчет item-item матрицы или очистку кэша рекомендаций.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: $ref: '#/components/schemas/RecommendationRebuildRequest'
       responses:
         '202':
           description: Пересчет запущен
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  jobId: { type: string }
-                  status: { type: string, example: "STARTED" }
+              schema: $ref: '#/components/schemas/RecommendationRebuildLog'
+        '400': { $ref: '#/components/responses/Error400' }
+  /recommendations/config:
+    get:
+      tags: [Maintenance]
+      summary: Получить конфигурацию рекомендаций
+      responses:
+        '200':
+          description: Текущие настройки
+          content:
+            application/json:
+              schema: $ref: '#/components/schemas/RecommendationConfig'
+    put:
+      tags: [Maintenance]
+      summary: Обновить конфигурацию рекомендаций
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: $ref: '#/components/schemas/RecommendationConfigUpdate'
+      responses:
+        '200':
+          description: Обновленные настройки
+          content:
+            application/json:
+              schema: $ref: '#/components/schemas/RecommendationConfig'
         '400': { $ref: '#/components/responses/Error400' }
   /strategies:
     post:
@@ -193,7 +219,61 @@ components:
   schemas:
     AlgorithmType:
       type: string
-      enum: [POPULARITY, CO_OCCURRENCE, ML_EMBEDDING]
+      enum: [POPULARITY, CO_OCCURRENCE, CONTENT_BASED, HYBRID, ML_EMBEDDING]
+    RecommendationRebuildStatus:
+      type: string
+      enum: [SCHEDULED, RUNNING, COMPLETED, FAILED]
+    RecommendationRebuildLog:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        status:
+          $ref: '#/components/schemas/RecommendationRebuildStatus'
+        processedUsers: { type: integer, format: int32 }
+        totalUsers: { type: integer, format: int32 }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time, nullable: true }
+        initiator: { type: string, nullable: true }
+        trainingPeriod: { type: string }
+        message: { type: string, nullable: true }
+    RecommendationConfig:
+      type: object
+      properties:
+        enabled: { type: boolean }
+        trainingPeriod: { type: string, enum: [DAY, WEEK, MONTH] }
+        defaultAlgorithm:
+          $ref: '#/components/schemas/AlgorithmType'
+        defaultStrategyId: { type: integer, format: int64, nullable: true }
+        recommendationLimit: { type: integer, minimum: 1, maximum: 100 }
+        rebuildBatchSize: { type: integer, minimum: 1 }
+        maxUsersPerJob: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        activeRebuild:
+          $ref: '#/components/schemas/RecommendationRebuildLog'
+        lastRebuild:
+          $ref: '#/components/schemas/RecommendationRebuildLog'
+    RecommendationConfigUpdate:
+      type: object
+      required: [trainingPeriod, defaultAlgorithm, recommendationLimit, rebuildBatchSize, maxUsersPerJob]
+      properties:
+        trainingPeriod:
+          type: string
+          enum: [DAY, WEEK, MONTH]
+        defaultAlgorithm:
+          $ref: '#/components/schemas/AlgorithmType'
+        defaultStrategyId: { type: integer, format: int64, nullable: true }
+        recommendationLimit: { type: integer, minimum: 1, maximum: 100 }
+        rebuildBatchSize: { type: integer, minimum: 1 }
+        maxUsersPerJob: { type: integer, minimum: 1 }
+        enabled: { type: boolean }
+    RecommendationRebuildRequest:
+      type: object
+      properties:
+        initiator:
+          type: string
+          description: Автор запроса пересчета
+          maxLength: 255
     Strategy:
       type: object
       properties:

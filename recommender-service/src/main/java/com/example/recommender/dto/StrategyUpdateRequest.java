@@ -17,6 +17,9 @@ public class StrategyUpdateRequest {
     private Integer timeDecayHalfLifeDays;
     private Integer minEventsPerUser;
     private Integer candidateLimit;
+    private Double contentWeight;
+    private Double collaborativeWeight;
+    private Double popularityWeight;
     private AlgorithmType fallbackAlgorithm;
     private Boolean isActive;
 }

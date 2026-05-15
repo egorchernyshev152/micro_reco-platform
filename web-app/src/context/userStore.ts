@@ -1,10 +1,17 @@
 import { create } from 'zustand';
+import { useCollectionStore } from './collectionStore';
+import { useActorFavoriteStore } from './actorFavoriteStore';
 
 export interface AuthUser {
   id: number;
   name: string;
   email: string;
   role: 'USER' | 'ADMIN';
+  blocked?: boolean;
+  roleChangedAt?: string;
+  roleChangedBy?: string;
+  blockedChangedAt?: string;
+  blockedChangedBy?: string;
 }
 
 interface AuthSession {
@@ -61,6 +68,8 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
   logout: () => {
     clearSession();
+    useCollectionStore.getState().reset();
+    useActorFavoriteStore.getState().reset();
     set({ user: null, token: null });
   }
 }));
